@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LosaTerm · Voip Terminal — Manuale / Manual</title>
+<style>
+  :root { --bg:#0d1117; --fg:#e6edf3; --acc:#58a6ff; --acc2:#3fb950; --warn:#d29922; --err:#f85149; --card:#161b22; --border:#30363d; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--fg); font-family:'Segoe UI',Arial,sans-serif; font-size:15px; line-height:1.7; }
+  a { color:var(--acc); }
+  header { background:#010409; border-bottom:2px solid var(--acc); padding:28px 48px; }
+  header h1 { font-size:2.1em; color:var(--acc); letter-spacing:1px; }
+  header .sub { color:#8b949e; font-size:1.02em; margin-top:6px; }
+  .langbar { background:var(--card); border-bottom:1px solid var(--border); padding:10px 48px; position:sticky; top:0; z-index:200; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .langbar span { color:#8b949e; font-size:0.85em; margin-right:8px; }
+  .langbtn { cursor:pointer; background:#21262d; color:#8b949e; border:1px solid var(--border); border-radius:6px; padding:5px 12px; font-size:0.9em; font-weight:600; }
+  .langbtn:hover { color:var(--fg); }
+  .langbtn.active { background:var(--acc); color:#021527; border-color:var(--acc); }
+  main { max-width:980px; margin:0 auto; padding:28px 24px; }
+  section { margin-bottom:44px; }
+  h2 { color:var(--acc); font-size:1.45em; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:16px; }
+  h3 { color:var(--acc2); font-size:1.1em; margin:18px 0 8px; }
+  h4 { color:var(--warn); font-size:1em; margin:14px 0 6px; }
+  p { margin-bottom:10px; }
+  ul,ol { margin:8px 0 12px 24px; }
+  li { margin-bottom:4px; }
+  code { background:#21262d; border:1px solid var(--border); border-radius:4px; padding:2px 6px; font-family:Consolas,monospace; font-size:0.9em; color:#e6edf3; }
+  pre { background:#161b22; border:1px solid var(--border); border-radius:8px; padding:16px; overflow-x:auto; margin:12px 0; }
+  pre code { background:none; border:none; padding:0; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:0.8em; font-weight:600; }
+  .req { background:#1f3350; color:var(--acc); border:1px solid var(--acc); }
+  .opt { background:#1f3a1f; color:var(--acc2); border:1px solid var(--acc2); }
+  table { width:100%; border-collapse:collapse; margin:12px 0; }
+  th { background:#21262d; color:var(--acc); text-align:left; padding:10px 12px; border:1px solid var(--border); }
+  td { padding:8px 12px; border:1px solid var(--border); vertical-align:top; }
+  tr:nth-child(even) { background:#0d1117; }
+  .tip { background:#1f2d3d; border-left:4px solid var(--acc); padding:12px 16px; border-radius:0 6px 6px 0; margin:12px 0; }
+  .warn-box { background:#2d2200; border-left:4px solid var(--warn); padding:12px 16px; border-radius:0 6px 6px 0; margin:12px 0; }
+  footer { background:#010409; border-top:1px solid var(--border); padding:20px 48px; color:#8b949e; text-align:center; font-size:0.9em; }
+  .lang { display:none; }
+  body.lang-it .lang.it, body.lang-en .lang.en { display:block; }
+</style>
+</head>
+<body class="lang-it">
+
+<header>
+  <h1>🩺 LosaTerm · Voip Terminal</h1>
+  <div class="sub">Il multitool dell'ingegnere Voice/UC — SSH/SFTP/SCP/FTP · SBC Health (OPTIONS/TLS/DNS) · PCAP &amp; SIP Ladder · Syslog · SIP Simulator · Cause Code · Debug Cmds — multivendor (Cisco, Teams, AudioCodes, Ribbon, Alcatel, Asterisk…)</div>
+</header>
+
+<div class="langbar">
+  <span>🌐 Lingua / Language:</span>
+  <button class="langbtn active" data-l="it" onclick="setLang('it')">🇮🇹 Italiano</button>
+  <button class="langbtn" data-l="en" onclick="setLang('en')">🇬🇧 English</button>
+</div>
+
+<main>
+
+<!-- ══════════════════ ITALIANO ══════════════════ -->
+<div class="lang it">
+
+<section>
+<h2>👋 Introduzione</h2>
+<p><strong>LosaTerm · Voip Terminal</strong> è un unico strumento portable per Windows che mette insieme tutto ciò che serve ogni giorno a chi lavora con Voice/VoIP/UC: terminale SSH e trasferimenti file, server FTP/SFTP e Syslog, diagnostica SBC vendor-neutral, analisi PCAP con diagramma SIP ladder, simulatore SIP, traduttore di cause code e un cheat-sheet di comandi di debug per i principali vendor.</p>
+<p>L'idea: <strong>un solo .exe, zero installazione, niente dipendenze</strong> (a parte gli strumenti che hai già: PuTTY per l'SSH, Wireshark per il PCAP). Gli strumenti SIP/RTP/TLS/DNS funzionano allo stesso modo che il box sia Cisco, Microsoft Teams, AudioCodes, Ribbon, Alcatel o Asterisk.</p>
+<div class="tip">Progetto gratuito, nato come hobby ed <strong>open source</strong> (licenza MIT). Ogni feedback aiuta a farlo crescere — usa il menu <strong>❓</strong> o il modulo sul sito.</div>
+</section>
+
+<section>
+<h2>📋 Requisiti</h2>
+<ul>
+  <li><span class="badge req">Necessario</span> Windows 10 / 11 (64 bit)</li>
+  <li><span class="badge req">Necessario</span> .NET Framework 4.8 (già presente su Windows aggiornato)</li>
+  <li><span class="badge opt">Opzionale</span> <strong>PuTTY</strong> — per le sessioni SSH/Telnet</li>
+  <li><span class="badge opt">Opzionale</span> <strong>Wireshark / tshark</strong> — per l'analisi PCAP (<a href="https://www.wireshark.org/download.html">download</a>)</li>
+</ul>
+</section>
+
+<section>
+<h2>⚙️ Installazione</h2>
+<ol>
+  <li>Estrai lo zip in una cartella a piacere.</li>
+  <li>Avvia <code>LosaTermVoip.exe</code> (doppio clic). È <strong>portable</strong>: nessuna installazione.</li>
+</ol>
+<div class="warn-box">L'eseguibile non è firmato digitalmente: Windows SmartScreen può mostrare <em>"App sconosciuta"</em>. È normale per un progetto indipendente → <strong>Ulteriori informazioni → Esegui comunque</strong>. In alternativa, il codice è open source: puoi compilartelo da solo con <code>build.bat</code>.</div>
+</section>
+
+<section>
+<h2>🔌 Finestra principale &amp; connessioni</h2>
+<p>A sinistra c'è la lista delle connessioni; in alto a destra trovi sempre l'<strong>IP del PC</strong> (e l'<strong>IP della VPN</strong> se attiva).</p>
+<ul>
+  <li><strong>+ Nuova / Modifica / Elimina</strong> — gestisci le connessioni (SSH, SFTP, SCP, FTP, HTTP/HTTPS), con tab VPN (Checkpoint, Fortinet, Windows VPN, Manuale).</li>
+  <li><strong>Riordino</strong> — sposta una connessione su/giù: tasto destro → <strong>▲ Sposta su / ▼ Sposta giù</strong>, oppure <strong>Ctrl+↑ / Ctrl+↓</strong>. L'ordine viene salvato.</li>
+  <li>Doppio clic = SSH integrato. <strong>SSH ↗</strong> = finestra separata. Tasto destro = menu.</li>
+  <li>Menu <strong>❓</strong> in alto: Sito web, Sostieni il progetto, Informazioni.</li>
+</ul>
+</section>
+
+<section>
+<h2>🖥️ SSH / Telnet e 📁 SFTP / SCP / FTP</h2>
+<p>SSH e Telnet a schede (richiede PuTTY). <strong>SFTP</strong> e <strong>SCP</strong> per i trasferimenti file (usano pscp/scp); l'<strong>FTP Browser</strong> per navigare un server FTP con download/upload/crea cartella/elimina.</p>
+<div class="tip">Per SCP verso apparati Cisco IOS ricorda i path tipo <code>flash:file.bin</code> / <code>bootflash:</code> (non <code>~/</code>), e che serve <code>ip scp server enable</code> e privilegio 15.</div>
+</section>
+
+<section>
+<h2>🖧 Server FTP / SFTP</h2>
+<p>Pulsante <strong>🖧 Server</strong>: avvia al volo un <strong>FTP server</strong> (porta/utente/password/anonimo/sola lettura) o configura il <strong>server SFTP</strong> basato su OpenSSH di Windows (installazione, avvio servizio, utente dedicato, condivisione di una cartella). Comodo per scaricare config/firmware da un apparato.</p>
+</section>
+
+<section>
+<h2>🩺 SBC Health (diagnostica trunk vendor-neutral)</h2>
+<p>Il fiore all'occhiello. Tre strumenti nativi, nessuna dipendenza, validi per qualsiasi SBC/trunk (Teams Direct Routing, AudioCodes, Ribbon, Cisco CUBE, Asterisk…):</p>
+<h3>SIP OPTIONS</h3>
+<p>Invia un SIP OPTIONS a host:porta in <strong>UDP/TCP/TLS</strong> e mostra la risposta + status + tempo. Un <strong>200 OK</strong> = trunk attivo (è il check di salute usato anche da Teams).</p>
+<h3>TLS / Certificato</h3>
+<p>Si connette in TLS (di solito porta 5061) e mostra <strong>CN/SAN, emittente, scadenza, versione TLS e cipher</strong>. La <strong>scadenza del certificato</strong> è la causa #1 di down su Teams Direct Routing.</p>
+<h3>DNS SRV / A</h3>
+<p>Risolve i record <strong>SRV</strong> (priorità/peso/porta/target) e <strong>A</strong> usando il resolver di Windows. Menu con i servizi pronti: <code>_sip._tcp</code>, <code>_sips._tls</code>, <code>_collab-edge._tls</code> (Cisco MRA), <code>_cisco-uds._tcp</code>, <code>_sipfederationtls._tcp</code>, XMPP, H.323.</p>
+</section>
+
+<section>
+<h2>📦 PCAP &amp; 🪜 SIP Ladder</h2>
+<p>Apri un PCAP con <strong>📦 PCAP</strong> (usa tshark). Nel tab <strong>Ladder</strong> ottieni il diagramma SIP come Wireshark.</p>
+<h3>Filtro chiamate (come Wireshark VoIP Calls)</h3>
+<ul>
+  <li>La tendina elenca le chiamate <strong>per Call-ID</strong>: selezionane una per vederne tutti i messaggi (re-INVITE inclusi). SUBSCRIBE/NOTIFY/REGISTER restano voci separate.</li>
+  <li><strong>🔗 Gambe</strong> — spunta opzionale: oltre alla chiamata, mostra anche le <em>gambe correlate</em> (es. le due tratte di una chiamata via CUCM), come selezionare più call in Wireshark.</li>
+  <li>Le frecce <strong>RTP verdi</strong> mostrano gli stream media (codec, pacchetti) interlacciati al SIP.</li>
+</ul>
+<h3>Diagnosi automatica</h3>
+<p>Selezionando una chiamata, il pannello di destra mostra una <strong>diagnosi automatica</strong>: esito (200/BYE oppure fallimento con codice e <em>cosa controllare</em>), <strong>ringback locale (180) vs early media (183)</strong>, challenge di autenticazione ripetuti, timeout/nessuna risposta.</p>
+</section>
+
+<section>
+<h2>📡 Syslog Server</h2>
+<p>Pulsante <strong>📡 Syslog</strong>: server <strong>UDP</strong> integrato (AudioCodes/Cisco). Configura l'apparato per inviare i syslog all'IP di questo PC sulla porta scelta (se la 514 fallisce usa la 1514). La spunta <strong>Solo SIP/Call</strong> mostra solo le righe dei messaggi SIP veri, nascondendo il rumore di configurazione.</p>
+</section>
+
+<section>
+<h2>🔀 Simulator (SIP, Cause Code, SDP, Debug Cmds)</h2>
+<h3>SIP Simulator</h3>
+<p>Costruisce e invia un messaggio SIP (INVITE, OPTIONS, REGISTER…) verso una destinazione, con From auto-popolato dall'IP del PC. Utile per testare la raggiungibilità/reazione di un peer.</p>
+<h3>Cause Code Translator</h3>
+<p>Traduci tra <strong>Q.850 ⇄ SIP ⇄ H.323</strong> e ottieni <strong>significato + "cosa controllare"</strong> da un dizionario completo (oltre 40 risposte SIP e 20+ cause Q.850). Es: <code>488</code> → <em>codec mismatch</em>; <code>403</code> → <em>policy/whitelist</em>.</p>
+<h3>SDP / Codec Analyzer</h3>
+<p>Incolla un SDP e ottieni: media IP, <strong>codec</strong> (rtpmap), direzione (sendrecv/sendonly/recvonly/inactive=hold), <strong>DTMF RFC2833</strong>, SRTP/crypto, ICE, ptime.</p>
+<h3>🐞 Debug Cmds</h3>
+<p>Cheat-sheet dei comandi di debug/logging per <strong>12 vendor</strong> (Cisco CUBE/IOS, Cisco CUCM con CLI, Asterisk/FreePBX, AudioCodes, Ribbon, Teams DR, Avaya, Mitel, 3CX, Alcatel OXE/OXO, FreeSWITCH, Cloud UCaaS), con pulsante <strong>📋 Copia</strong>.</p>
+<div class="warn-box">Alza i livelli di debug solo per la diagnosi e <strong>riportali a default</strong> a fine analisi: su sistemi in produzione un trace troppo verboso può impattare le prestazioni.</div>
+</section>
+
+<section>
+<h2>📖 Doc &amp; 🖱️ Drag &amp; Drop</h2>
+<p><strong>📖 Doc</strong>: raccolta di link editabile e categorizzata (CUCM SRND, AudioCodes, ecc.) — doppio clic apre nel browser.</p>
+<p><strong>Drag &amp; Drop</strong>: trascina un file sulla finestra e scegli cosa farne — PCAP → analizza nel Ladder; trace SDL → TranslatorX; syslog/log → viewer Syslog.</p>
+</section>
+
+<section>
+<h2>🌐 Lingua, layout, feedback</h2>
+<p>Interfaccia multilingua (IT/EN/FR/DE/ES): menu <strong>🌐 Language</strong> → scegli la lingua e riavvia per applicare. Posizione/dimensione finestra e ordine connessioni vengono salvati. Per feedback e donazioni usa il menu <strong>❓</strong> o il sito.</p>
+</section>
+
+<section>
+<h2>🔧 Troubleshooting</h2>
+<h3>SSH non parte</h3><p>Metti <code>putty.exe</code> accanto all'exe o in <code>C:\Program Files\PuTTY\</code>.</p>
+<h3>PCAP non funziona</h3><p>Installa Wireshark con <strong>tshark</strong> e riavvia l'app.</p>
+<h3>Ladder "Nessun messaggio SIP"</h3><p>SIP su porta non standard: in Wireshark usa <em>Decode As</em> per assegnare la porta a SIP.</p>
+<h3>Non vedo le frecce RTP</h3><p>La cattura potrebbe contenere solo segnalazione (RTP su un altro segmento), oppure l'RTP è su porte non riconosciute.</p>
+<h3>Syslog: porta 514 occupata</h3><p>Chiudi con <strong>Ferma</strong>, usa la 1514 o riavvia il PC (socket orfano).</p>
+<h3>Connessioni/password</h3><p>Salvate in <code>%APPDATA%\LosaTermVoip\connections.json</code>, cifrate con <strong>DPAPI</strong>: valgono solo sullo stesso PC/utente.</p>
+</section>
+
+</div>
+
+<!-- ══════════════════ ENGLISH ══════════════════ -->
+<div class="lang en">
+
+<section>
+<h2>👋 Introduction</h2>
+<p><strong>LosaTerm · Voip Terminal</strong> is a single portable Windows tool that brings together everything you reach for daily when working with Voice/VoIP/UC: an SSH terminal and file transfers, FTP/SFTP and Syslog servers, vendor-neutral SBC diagnostics, PCAP analysis with a SIP ladder diagram, a SIP simulator, a cause-code translator and a debug-command cheat-sheet for the main vendors.</p>
+<p>The idea: <strong>one .exe, no install, no dependencies</strong> (besides tools you already have: PuTTY for SSH, Wireshark for PCAP). The SIP/RTP/TLS/DNS tools work the same whether the box is Cisco, Microsoft Teams, AudioCodes, Ribbon, Alcatel or Asterisk.</p>
+<div class="tip">A free hobby project, <strong>open source</strong> (MIT license). Every piece of feedback helps it grow — use the <strong>❓</strong> menu or the form on the website.</div>
+</section>
+
+<section>
+<h2>📋 Requirements</h2>
+<ul>
+  <li><span class="badge req">Required</span> Windows 10 / 11 (64-bit)</li>
+  <li><span class="badge req">Required</span> .NET Framework 4.8 (present on up-to-date Windows)</li>
+  <li><span class="badge opt">Optional</span> <strong>PuTTY</strong> — for SSH/Telnet sessions</li>
+  <li><span class="badge opt">Optional</span> <strong>Wireshark / tshark</strong> — for PCAP analysis (<a href="https://www.wireshark.org/download.html">download</a>)</li>
+</ul>
+</section>
+
+<section>
+<h2>⚙️ Installation</h2>
+<ol>
+  <li>Unzip into any folder.</li>
+  <li>Run <code>LosaTermVoip.exe</code> (double-click). It's <strong>portable</strong>: no installation.</li>
+</ol>
+<div class="warn-box">The executable isn't code-signed, so Windows SmartScreen may say <em>"unknown app"</em> — normal for an independent project → <strong>More info → Run anyway</strong>. Alternatively the code is open source: build it yourself with <code>build.bat</code>.</div>
+</section>
+
+<section>
+<h2>🔌 Main window &amp; connections</h2>
+<p>The connection list is on the left; the top-right always shows the <strong>PC's IP</strong> (and the <strong>VPN IP</strong> if active).</p>
+<ul>
+  <li><strong>+ New / Edit / Delete</strong> — manage connections (SSH, SFTP, SCP, FTP, HTTP/HTTPS), with a VPN tab (Checkpoint, Fortinet, Windows VPN, Manual).</li>
+  <li><strong>Reordering</strong> — move a connection up/down: right-click → <strong>▲ Move up / ▼ Move down</strong>, or <strong>Ctrl+↑ / Ctrl+↓</strong>. The order is saved.</li>
+  <li>Double-click = embedded SSH. <strong>SSH ↗</strong> = separate window. Right-click = menu.</li>
+  <li><strong>❓</strong> menu: Website, Support the project, About.</li>
+</ul>
+</section>
+
+<section>
+<h2>🖥️ SSH / Telnet and 📁 SFTP / SCP / FTP</h2>
+<p>Tabbed SSH and Telnet (requires PuTTY). <strong>SFTP</strong> and <strong>SCP</strong> for file transfers (via pscp/scp); the <strong>FTP Browser</strong> to navigate an FTP server with download/upload/make-dir/delete.</p>
+<div class="tip">For SCP to Cisco IOS devices remember paths like <code>flash:file.bin</code> / <code>bootflash:</code> (not <code>~/</code>), and that you need <code>ip scp server enable</code> and privilege 15.</div>
+</section>
+
+<section>
+<h2>🖧 FTP / SFTP Server</h2>
+<p><strong>🖧 Server</strong> button: spin up an <strong>FTP server</strong> (port/user/password/anonymous/read-only) or configure the <strong>SFTP server</strong> based on Windows OpenSSH (install, start service, dedicated user, share a folder). Handy to pull config/firmware off a device.</p>
+</section>
+
+<section>
+<h2>🩺 SBC Health (vendor-neutral trunk diagnostics)</h2>
+<p>The flagship. Three native tools, no dependencies, valid for any SBC/trunk (Teams Direct Routing, AudioCodes, Ribbon, Cisco CUBE, Asterisk…):</p>
+<h3>SIP OPTIONS</h3>
+<p>Send a SIP OPTIONS to host:port over <strong>UDP/TCP/TLS</strong> and see the response + status + time. A <strong>200 OK</strong> = trunk up (the same health check Teams uses).</p>
+<h3>TLS / Certificate</h3>
+<p>Connects over TLS (usually port 5061) and shows <strong>CN/SAN, issuer, expiry, TLS version and cipher</strong>. Certificate <strong>expiry</strong> is the #1 cause of Teams Direct Routing outages.</p>
+<h3>DNS SRV / A</h3>
+<p>Resolves <strong>SRV</strong> (priority/weight/port/target) and <strong>A</strong> records via the Windows resolver. Presets included: <code>_sip._tcp</code>, <code>_sips._tls</code>, <code>_collab-edge._tls</code> (Cisco MRA), <code>_cisco-uds._tcp</code>, <code>_sipfederationtls._tcp</code>, XMPP, H.323.</p>
+</section>
+
+<section>
+<h2>📦 PCAP &amp; 🪜 SIP Ladder</h2>
+<p>Open a PCAP with <strong>📦 PCAP</strong> (uses tshark). The <strong>Ladder</strong> tab draws the SIP diagram like Wireshark.</p>
+<h3>Call filtering (like Wireshark VoIP Calls)</h3>
+<ul>
+  <li>The dropdown lists calls <strong>per Call-ID</strong>: pick one to see all its messages (re-INVITEs included). SUBSCRIBE/NOTIFY/REGISTER stay separate.</li>
+  <li><strong>🔗 Legs</strong> — optional checkbox: also shows the <em>correlated legs</em> (e.g. the two segments of a call via CUCM), like selecting multiple calls in Wireshark.</li>
+  <li>Green <strong>RTP arrows</strong> show the media streams (codec, packets) interleaved with SIP.</li>
+</ul>
+<h3>Auto-diagnosis</h3>
+<p>When you select a call, the right panel shows an <strong>automatic diagnosis</strong>: outcome (200/BYE or failure with code and <em>what to check</em>), <strong>local ringback (180) vs early media (183)</strong>, repeated auth challenges, timeout/no answer.</p>
+</section>
+
+<section>
+<h2>📡 Syslog Server</h2>
+<p><strong>📡 Syslog</strong> button: built-in <strong>UDP</strong> server (AudioCodes/Cisco). Configure the device to send syslog to this PC's IP on the chosen port (if 514 fails use 1514). The <strong>SIP/Call only</strong> checkbox shows only real SIP message lines, hiding configuration noise.</p>
+</section>
+
+<section>
+<h2>🔀 Simulator (SIP, Cause Code, SDP, Debug Cmds)</h2>
+<h3>SIP Simulator</h3>
+<p>Build and send a SIP message (INVITE, OPTIONS, REGISTER…) to a destination, with From auto-filled from the PC's IP. Useful to test a peer's reachability/reaction.</p>
+<h3>Cause Code Translator</h3>
+<p>Translate between <strong>Q.850 ⇄ SIP ⇄ H.323</strong> and get <strong>meaning + "what to check"</strong> from a complete dictionary (40+ SIP responses and 20+ Q.850 causes). E.g. <code>488</code> → <em>codec mismatch</em>; <code>403</code> → <em>policy/whitelist</em>.</p>
+<h3>SDP / Codec Analyzer</h3>
+<p>Paste an SDP and get: media IP, <strong>codec</strong> (rtpmap), direction (sendrecv/sendonly/recvonly/inactive=hold), <strong>DTMF RFC2833</strong>, SRTP/crypto, ICE, ptime.</p>
+<h3>🐞 Debug Cmds</h3>
+<p>A debug/logging command cheat-sheet for <strong>12 vendors</strong> (Cisco CUBE/IOS, Cisco CUCM with CLI, Asterisk/FreePBX, AudioCodes, Ribbon, Teams DR, Avaya, Mitel, 3CX, Alcatel OXE/OXO, FreeSWITCH, Cloud UCaaS), with a <strong>📋 Copy</strong> button.</p>
+<div class="warn-box">Raise debug levels only for diagnosis and <strong>set them back to default</strong> afterwards: on production systems an overly verbose trace can impact performance.</div>
+</section>
+
+<section>
+<h2>📖 Doc &amp; 🖱️ Drag &amp; Drop</h2>
+<p><strong>📖 Doc</strong>: an editable, categorized link collection (CUCM SRND, AudioCodes, etc.) — double-click opens in the browser.</p>
+<p><strong>Drag &amp; Drop</strong>: drop a file on the window and choose what to do — PCAP → analyze in the Ladder; SDL trace → TranslatorX; syslog/log → Syslog viewer.</p>
+</section>
+
+<section>
+<h2>🌐 Language, layout, feedback</h2>
+<p>Multilingual UI (IT/EN/FR/DE/ES): <strong>🌐 Language</strong> menu → pick a language and restart to apply. Window position/size and connection order are saved. For feedback and donations use the <strong>❓</strong> menu or the website.</p>
+</section>
+
+<section>
+<h2>🔧 Troubleshooting</h2>
+<h3>SSH won't start</h3><p>Put <code>putty.exe</code> next to the exe or in <code>C:\Program Files\PuTTY\</code>.</p>
+<h3>PCAP doesn't work</h3><p>Install Wireshark with <strong>tshark</strong> and restart the app.</p>
+<h3>Ladder shows "No SIP messages"</h3><p>SIP on a non-standard port: in Wireshark use <em>Decode As</em> to map the port to SIP.</p>
+<h3>No RTP arrows</h3><p>The capture may contain only signaling (RTP on another segment), or RTP is on unrecognized ports.</p>
+<h3>Syslog: port 514 busy</h3><p>Close with <strong>Stop</strong>, use 1514 or reboot the PC (orphan socket).</p>
+<h3>Connections/passwords</h3><p>Stored in <code>%APPDATA%\LosaTermVoip\connections.json</code>, encrypted with <strong>DPAPI</strong>: valid only on the same PC/user.</p>
+</section>
+
+</div>
+
+</main>
+
+<footer>
+  LosaTerm · Voip Terminal — v1.1 Beta · <a href="https://losavoip.github.io">losavoip.github.io</a> · open source (MIT) ·
+  © 2026 Daniele Losapio<br>
+  Non affiliato a Cisco, Microsoft, AudioCodes, Ribbon, Alcatel, Sangoma o TranslatorX. I marchi appartengono ai rispettivi proprietari.
+</footer>
+
+<script>
+function setLang(l){
+  document.body.className = 'lang-' + l;
+  var btns = document.querySelectorAll('.langbtn');
+  for (var i=0;i<btns.length;i++) btns[i].classList.toggle('active', btns[i].getAttribute('data-l')===l);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+==========================================================
+  LosaTerm  ·  Voip Terminal   —   v1.1 Beta
+  Il multitool dell'ingegnere Voice/UC
+==========================================================
+
+GRAZIE per aver scaricato LosaTerm Voip Terminal!
+Progetto gratuito, nato come hobby. Ogni feedback e' prezioso.
+
+----------------------------------------------------------
+COME SI USA
+----------------------------------------------------------
+1. Estrai questo zip in una cartella a piacere.
+2. Avvia  LosaTermVoip.exe  (doppio click). E' portable:
+   non richiede installazione.
+3. Il manuale e' in  LosaTermVoip_Manuale.html
+   (apri con un browser).
+
+----------------------------------------------------------
+REQUISITI
+----------------------------------------------------------
+- Windows 10 / 11 (64 bit)
+- .NET Framework 4.8 (gia' presente su Windows aggiornato)
+
+OPZIONALI (per alcune funzioni):
+- PuTTY        -> per le sessioni SSH/Telnet
+- Wireshark    -> per l'analisi PCAP (usa tshark)
+  Download: https://www.wireshark.org/download.html
+
+----------------------------------------------------------
+AVVISO SMARTSCREEN
+----------------------------------------------------------
+L'eseguibile non e' firmato digitalmente, quindi Windows
+SmartScreen potrebbe mostrare "App sconosciuta".
+E' normale per un progetto indipendente: clicca
+"Ulteriori informazioni" -> "Esegui comunque".
+
+----------------------------------------------------------
+SITO / FEEDBACK / SUPPORTO
+----------------------------------------------------------
+Sito web:   https://losavoip.github.io
+Feedback:   dal modulo sul sito, o dal menu ? dell'app
+Sostieni:   menu ?  ->  Sostieni il progetto
+
+Non affiliato a Cisco, Microsoft, AudioCodes, Ribbon,
+Alcatel, Sangoma o TranslatorX. I marchi appartengono ai
+rispettivi proprietari.
+
+(c) 2026 Daniele Losapio

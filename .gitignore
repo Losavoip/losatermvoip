@@ -1,0 +1,11 @@
+# Build artifacts
+*.exe
+*.pdb
+*.zip
+/dist/
+
+# OS / editor cruft
+Thumbs.db
+desktop.ini
+.vs/
+*.user
