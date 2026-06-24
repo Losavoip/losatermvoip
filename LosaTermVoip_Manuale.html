@@ -46,7 +46,7 @@
 
 <header>
   <h1>🩺 LosaTerm · Voip Terminal</h1>
-  <div class="sub">Il multitool dell'ingegnere Voice/UC — SSH/SFTP/SCP/FTP · SBC Health (OPTIONS/TLS/DNS) · PCAP &amp; SIP Ladder · Syslog · SIP Simulator · Cause Code · Debug Cmds — multivendor (Cisco, Teams, AudioCodes, Ribbon, Alcatel, Asterisk…)</div>
+  <div class="sub">Multitool per Voice / VoIP / UC — SSH/SFTP/SCP/FTP · Console seriale · SBC Health (OPTIONS/TLS/DNS) · PCAP &amp; SIP Ladder · Syslog · SIP Simulator · Cause Code · Net Tools · server FTP/SFTP/TFTP/DHCP · Debug Cmds — multivendor (Cisco, Teams, AudioCodes, Ribbon, Alcatel, Asterisk…)</div>
 </header>
 
 <div class="langbar">
@@ -72,7 +72,7 @@
 <ul>
   <li><span class="badge req">Necessario</span> Windows 10 / 11 (64 bit)</li>
   <li><span class="badge req">Necessario</span> .NET Framework 4.8 (già presente su Windows aggiornato)</li>
-  <li><span class="badge opt">Opzionale</span> <strong>PuTTY</strong> — per le sessioni SSH/Telnet</li>
+  <li><span class="badge opt">Incluso</span> <strong>PuTTY</strong> — già nello zip, usato per SSH/Telnet e per la Console seriale. Se hai un PuTTY installato in <code>C:\Program Files\PuTTY\</code> l'app usa quello (così resta aggiornato).</li>
   <li><span class="badge opt">Opzionale</span> <strong>Wireshark / tshark</strong> — per l'analisi PCAP (<a href="https://www.wireshark.org/download.html">download</a>)</li>
 </ul>
 </section>
@@ -104,8 +104,21 @@
 </section>
 
 <section>
-<h2>🖧 Server FTP / SFTP</h2>
-<p>Pulsante <strong>🖧 Server</strong>: avvia al volo un <strong>FTP server</strong> (porta/utente/password/anonimo/sola lettura) o configura il <strong>server SFTP</strong> basato su OpenSSH di Windows (installazione, avvio servizio, utente dedicato, condivisione di una cartella). Comodo per scaricare config/firmware da un apparato.</p>
+<h2>🔌 Console seriale</h2>
+<p>Pulsante <strong>🔌 Serial</strong>: console per <strong>gateway, SBC e router via porta COM</strong> (adattatore USB-seriale). Scegli porta COM e baud (default <strong>9600 8N1</strong>, lo standard delle console Cisco) e premi <strong>Apri nel tab</strong>: la console si apre <strong>dentro una scheda</strong> di LosaTerm (PuTTY in modalità seriale, embeddato come l'SSH), con la stessa barra <strong>📊 Analizzatore / 📄 Log / ❌ Chiudi</strong>.</p>
+<div class="tip">L'analizzatore funziona anche sulla console seriale: collegando un apparato Cisco IOS, le regole evidenziano in tempo reale le anomalie (interfacce down, reload, NTP non sincronizzato, DSP/PVDM…) mentre digiti.</div>
+</section>
+
+<section>
+<h2>🖧 Server FTP / SFTP / TFTP / DHCP</h2>
+<p>Pulsante <strong>🖧 Server</strong>, quattro schede:</p>
+<ul>
+  <li><strong>FTP</strong> — avvia al volo un FTP server (porta/utente/password/anonimo/sola lettura).</li>
+  <li><strong>SFTP</strong> — configura il server SFTP basato su OpenSSH di Windows (installazione, avvio servizio, utente dedicato, condivisione di una cartella). Per l'utente dedicato usa il pulsante <strong>🎲 Genera</strong> per una password conforme ai criteri (anche di dominio).</li>
+  <li><strong>TFTP</strong> — server TFTP nativo (UDP 69) per provisioning/firmware di telefoni e gateway.</li>
+  <li><strong>DHCP (lab)</strong> — server DHCP nativo con opzioni <strong>66/150</strong> (TFTP) per i telefoni.</li>
+</ul>
+<div class="warn-box">Il <strong>DHCP server è solo per laboratori isolati</strong>: su una rete di produzione un secondo server DHCP causa conflitti gravi. Usalo solo su una rete separata e spegnilo a fine test.</div>
 </section>
 
 <section>
@@ -138,6 +151,11 @@
 </section>
 
 <section>
+<h2>🧰 Net Tools</h2>
+<p>Pulsante <strong>🧰 Net</strong>: cassetta degli attrezzi di rete in un unico pannello — <strong>Ping</strong>, <strong>Traceroute</strong>, <strong>Port check</strong> (TCP), <strong>MTU discovery</strong> e <strong>NTP check</strong> (verifica l'orario di un server NTP — utile perché un clock sbagliato fa scadere/invalidare i certificati TLS dei trunk).</p>
+</section>
+
+<section>
 <h2>🔀 Simulator (SIP, Cause Code, SDP, Debug Cmds)</h2>
 <h3>SIP Simulator</h3>
 <p>Costruisce e invia un messaggio SIP (INVITE, OPTIONS, REGISTER…) verso una destinazione, con From auto-popolato dall'IP del PC. Utile per testare la raggiungibilità/reazione di un peer.</p>
@@ -163,7 +181,7 @@
 
 <section>
 <h2>🔧 Troubleshooting</h2>
-<h3>SSH non parte</h3><p>Metti <code>putty.exe</code> accanto all'exe o in <code>C:\Program Files\PuTTY\</code>.</p>
+<h3>SSH / seriale non parte</h3><p><code>putty.exe</code> è <strong>già incluso nello zip</strong>: assicurati di aver estratto <em>tutto</em> nella stessa cartella dell'exe. Se l'hai cancellato, rimettilo accanto all'exe o installa PuTTY in <code>C:\Program Files\PuTTY\</code>.</p>
 <h3>PCAP non funziona</h3><p>Installa Wireshark con <strong>tshark</strong> e riavvia l'app.</p>
 <h3>Ladder "Nessun messaggio SIP"</h3><p>SIP su porta non standard: in Wireshark usa <em>Decode As</em> per assegnare la porta a SIP.</p>
 <h3>Non vedo le frecce RTP</h3><p>La cattura potrebbe contenere solo segnalazione (RTP su un altro segmento), oppure l'RTP è su porte non riconosciute.</p>
@@ -188,7 +206,7 @@
 <ul>
   <li><span class="badge req">Required</span> Windows 10 / 11 (64-bit)</li>
   <li><span class="badge req">Required</span> .NET Framework 4.8 (present on up-to-date Windows)</li>
-  <li><span class="badge opt">Optional</span> <strong>PuTTY</strong> — for SSH/Telnet sessions</li>
+  <li><span class="badge opt">Bundled</span> <strong>PuTTY</strong> — already in the zip, used for SSH/Telnet and the Serial Console. If you have PuTTY installed in <code>C:\Program Files\PuTTY\</code> the app uses that one (so it stays updated).</li>
   <li><span class="badge opt">Optional</span> <strong>Wireshark / tshark</strong> — for PCAP analysis (<a href="https://www.wireshark.org/download.html">download</a>)</li>
 </ul>
 </section>
@@ -220,8 +238,21 @@
 </section>
 
 <section>
-<h2>🖧 FTP / SFTP Server</h2>
-<p><strong>🖧 Server</strong> button: spin up an <strong>FTP server</strong> (port/user/password/anonymous/read-only) or configure the <strong>SFTP server</strong> based on Windows OpenSSH (install, start service, dedicated user, share a folder). Handy to pull config/firmware off a device.</p>
+<h2>🔌 Serial Console</h2>
+<p><strong>🔌 Serial</strong> button: console for <strong>gateways, SBCs and routers over a COM port</strong> (USB-serial adapter). Pick the COM port and baud (default <strong>9600 8N1</strong>, the Cisco console standard) and click <strong>Open in tab</strong>: the console opens <strong>inside a tab</strong> of LosaTerm (PuTTY in serial mode, embedded like SSH), with the same <strong>📊 Analyzer / 📄 Log / ❌ Close</strong> bar.</p>
+<div class="tip">The analyzer works on the serial console too: connect a Cisco IOS device and the rules flag anomalies live (interfaces down, reload, NTP unsynced, DSP/PVDM…) as you type.</div>
+</section>
+
+<section>
+<h2>🖧 FTP / SFTP / TFTP / DHCP Server</h2>
+<p><strong>🖧 Server</strong> button, four tabs:</p>
+<ul>
+  <li><strong>FTP</strong> — spin up an FTP server (port/user/password/anonymous/read-only).</li>
+  <li><strong>SFTP</strong> — configure the SFTP server based on Windows OpenSSH (install, start service, dedicated user, share a folder). For the dedicated user, use the <strong>🎲 Generate</strong> button for a policy-compliant password (incl. domain policy).</li>
+  <li><strong>TFTP</strong> — native TFTP server (UDP 69) for phone/gateway provisioning &amp; firmware.</li>
+  <li><strong>DHCP (lab)</strong> — native DHCP server with options <strong>66/150</strong> (TFTP) for phones.</li>
+</ul>
+<div class="warn-box">The <strong>DHCP server is for isolated labs only</strong>: on a production network a second DHCP server causes serious conflicts. Use it only on a separate network and stop it after testing.</div>
 </section>
 
 <section>
@@ -254,6 +285,11 @@
 </section>
 
 <section>
+<h2>🧰 Net Tools</h2>
+<p><strong>🧰 Net</strong> button: a network toolbox in one panel — <strong>Ping</strong>, <strong>Traceroute</strong>, <strong>Port check</strong> (TCP), <strong>MTU discovery</strong> and <strong>NTP check</strong> (verify an NTP server's time — handy because a wrong clock makes trunk TLS certificates expire/invalid).</p>
+</section>
+
+<section>
 <h2>🔀 Simulator (SIP, Cause Code, SDP, Debug Cmds)</h2>
 <h3>SIP Simulator</h3>
 <p>Build and send a SIP message (INVITE, OPTIONS, REGISTER…) to a destination, with From auto-filled from the PC's IP. Useful to test a peer's reachability/reaction.</p>
@@ -279,7 +315,7 @@
 
 <section>
 <h2>🔧 Troubleshooting</h2>
-<h3>SSH won't start</h3><p>Put <code>putty.exe</code> next to the exe or in <code>C:\Program Files\PuTTY\</code>.</p>
+<h3>SSH / serial won't start</h3><p><code>putty.exe</code> is <strong>already bundled in the zip</strong>: make sure you extracted <em>everything</em> into the same folder as the exe. If you deleted it, put it back next to the exe or install PuTTY in <code>C:\Program Files\PuTTY\</code>.</p>
 <h3>PCAP doesn't work</h3><p>Install Wireshark with <strong>tshark</strong> and restart the app.</p>
 <h3>Ladder shows "No SIP messages"</h3><p>SIP on a non-standard port: in Wireshark use <em>Decode As</em> to map the port to SIP.</p>
 <h3>No RTP arrows</h3><p>The capture may contain only signaling (RTP on another segment), or RTP is on unrecognized ports.</p>
@@ -292,7 +328,7 @@
 </main>
 
 <footer>
-  LosaTerm · Voip Terminal — v1.1 Beta · <a href="https://losavoip.github.io">losavoip.github.io</a> · open source (MIT) ·
+  LosaTerm · Voip Terminal — v1.1 Stabile · <a href="https://losavoip.github.io">losavoip.github.io</a> · open source (MIT) ·
   © 2026 Daniele Losapio<br>
   Non affiliato a Cisco, Microsoft, AudioCodes, Ribbon, Alcatel, Sangoma o TranslatorX. I marchi appartengono ai rispettivi proprietari.
 </footer>

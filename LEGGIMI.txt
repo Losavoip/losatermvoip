@@ -1,6 +1,6 @@
 ==========================================================
-  LosaTerm  ·  Voip Terminal   —   v1.1 Beta
-  Il multitool dell'ingegnere Voice/UC
+  LosaTerm  ·  Voip Terminal   —   v1.1 Stabile
+  Multitool per Voice / VoIP / UC
 ==========================================================
 
 GRAZIE per aver scaricato LosaTerm Voip Terminal!
@@ -21,8 +21,14 @@ REQUISITI
 - Windows 10 / 11 (64 bit)
 - .NET Framework 4.8 (gia' presente su Windows aggiornato)
 
+INCLUSO nello zip:
+- putty.exe (PuTTY 0.84, licenza MIT) -> usato per le sessioni
+  SSH/Telnet e per la Console seriale. Nessun download serve.
+  Se hai gia' PuTTY installato in C:\Program Files\PuTTY\,
+  l'app usa quello (cosi' resta aggiornato di sicurezza).
+  PuTTY (c) Simon Tatham e collaboratori - https://www.putty.org
+
 OPZIONALI (per alcune funzioni):
-- PuTTY        -> per le sessioni SSH/Telnet
 - Wireshark    -> per l'analisi PCAP (usa tshark)
   Download: https://www.wireshark.org/download.html
 

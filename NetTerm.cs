@@ -104,7 +104,7 @@ namespace LosaTermVoip
             Controls.Add(new Label { Text = "LosaTerm  Voip Terminal", Location = new Point(92, 20),
                 AutoSize = true, Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 ForeColor = Color.FromArgb(120, 230, 200) });
-            Controls.Add(new Label { Text = "v1.1 · Beta", Location = new Point(94, 52),
+            Controls.Add(new Label { Text = "v1.1 · Stabile", Location = new Point(94, 52),
                 AutoSize = true, ForeColor = Color.FromArgb(39, 194, 255) });
 
             Controls.Add(new Label {
@@ -337,10 +337,12 @@ namespace LosaTermVoip
         public static string FindPutty()
         {
             string exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            // Priorità: un PuTTY installato dall'utente (riceve i suoi aggiornamenti di sicurezza)
+            // vince sul putty.exe incluso nello zip, che resta come fallback "funziona sempre".
             foreach (var p in new[] {
-                Path.Combine(exeDir, "putty.exe"),
                 @"C:\Program Files\PuTTY\putty.exe",
                 @"C:\Program Files (x86)\PuTTY\putty.exe",
+                Path.Combine(exeDir, "putty.exe"),
                 @"C:\tools\putty.exe"
             }) if (File.Exists(p)) return p;
 
