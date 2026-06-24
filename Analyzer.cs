@@ -869,7 +869,9 @@ namespace LosaTermVoip
         ComboBox               cmbCallId;
         ComboBox               cmbProto;
         CheckBox               chkCorr;
+        ComboBox               cmbGroupMode;
         Label                  lblCallSel;
+        string                 lastVoip, lastSip;
 
         const int ROW_H   = 28;
         const int HDR_H   = 65;
@@ -944,6 +946,21 @@ namespace LosaTermVoip
             new ToolTip().SetToolTip(chkCorr, "Mostra anche le gambe correlate della stessa telefonata (come selezionare più chiamate in Wireshark)");
             chkCorr.CheckedChanged += (s, e) => ApplyFilter();
             filterBar.Controls.Add(chkCorr);
+
+            // Modalità di raggruppamento: per Call-ID (come Wireshark) oppure chiamata intera (gambe unite)
+            cmbGroupMode = new ComboBox { Location = new Point(772, 3), Width = 165,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.FromArgb(45, 55, 80), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            cmbGroupMode.Items.Add("🔗 Per Call-ID");
+            cmbGroupMode.Items.Add("📞 Chiamata intera");
+            cmbGroupMode.SelectedIndex = 0;
+            new ToolTip().SetToolTip(cmbGroupMode, "Per Call-ID = come Wireshark (una gamba per voce). Chiamata intera = unisce le gambe della stessa telefonata via numeri+tempo (utile attraverso gli SBC).");
+            cmbGroupMode.SelectedIndexChanged += (s, e) => {
+                bool logical = cmbGroupMode.SelectedIndex == 1;
+                if (chkCorr != null) { chkCorr.Enabled = !logical; if (logical) chkCorr.Checked = false; }
+                LoadMessages(allMsgs, lastVoip, lastSip);   // ricostruisce gruppi + tendina
+            };
+            filterBar.Controls.Add(cmbGroupMode);
 
             // Stats bar
             lblVoip = new Label {
@@ -1041,6 +1058,7 @@ namespace LosaTermVoip
         // (con INVITE) vicine nel tempo (≤8s) e che condividono un numero chiamante/chiamato.
         void AddRelatedGroups(string sel, HashSet<string> target)
         {
+            const double WIN = 20.0;   // finestra ampia: il ring/setup tra le gambe può durare
             var users = new Dictionary<string, HashSet<string>>();
             var t0 = new Dictionary<string, double>();
             var t1 = new Dictionary<string, double>();
@@ -1050,8 +1068,9 @@ namespace LosaTermVoip
                 string g = GKey(m);
                 if (string.IsNullOrEmpty(g) || g == "?") continue;
                 if (!users.ContainsKey(g)) { users[g] = new HashSet<string>(); t0[g] = m.RelSec; t1[g] = m.RelSec; }
-                if (!string.IsNullOrEmpty(m.FromUser)) users[g].Add(m.FromUser);
-                if (!string.IsNullOrEmpty(m.ToUser))   users[g].Add(m.ToUser);
+                string a = NormNum(m.FromUser), b = NormNum(m.ToUser);
+                if (a != null) users[g].Add(a);
+                if (b != null) users[g].Add(b);
                 if (m.RelSec < t0[g]) t0[g] = m.RelSec;
                 if (m.RelSec > t1[g]) t1[g] = m.RelSec;
                 if (m.Method != null && m.Method.StartsWith("INVITE")) hasInv.Add(g);
@@ -1060,8 +1079,80 @@ namespace LosaTermVoip
             foreach (var g in users.Keys)
             {
                 if (g == sel || target.Contains(g) || !hasInv.Contains(g)) continue;
-                bool timeClose = !(t1[sel] < t0[g] - 8 || t1[g] < t0[sel] - 8);
+                bool timeClose = !(t1[sel] < t0[g] - WIN || t1[g] < t0[sel] - WIN);
                 if (timeClose && users[sel].Overlaps(users[g])) target.Add(g);
+            }
+        }
+
+        // true se la modalità "Chiamata intera" (gambe unite) è attiva
+        bool IsLogicalMode()
+        {
+            return cmbGroupMode != null && cmbGroupMode.SelectedIndex == 1;
+        }
+
+        // Normalizza un numero per il confronto fra gambe: tiene solo le cifre e
+        // assorbe i prefissi internazionali/E.164 confrontando le ultime cifre
+        // (così 03382000993, +393382000993, 00393382000993… combaciano).
+        static string NormNum(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return null;
+            var sb = new StringBuilder();
+            foreach (char ch in s) if (ch >= '0' && ch <= '9') sb.Append(ch);
+            string d = sb.ToString();
+            if (d.Length < 3) return null;                       // troppo corto / inaffidabile
+            if (d.StartsWith("00")) d = d.Substring(2);          // 0039… → 39…
+            if (d.Length > 9) d = d.Substring(d.Length - 9);     // confronta sulle ultime 9 cifre
+            return d;
+        }
+
+        // Imposta m.Group per tutti i messaggi secondo la modalità di raggruppamento:
+        //  - non-logica → Group = Call-ID (una gamba per voce, come Wireshark);
+        //  - logica     → unisce i Call-ID della stessa telefonata (numeri normalizzati
+        //                 in comune + vicinanza temporale ≤20s) con union-find, e usa
+        //                 l'id del cluster come Group → tutta la chiamata end-to-end.
+        void RecomputeGroups(bool logical)
+        {
+            if (allMsgs == null) return;
+            if (!logical)
+            {
+                foreach (var m in allMsgs) m.Group = m.CallId;
+                return;
+            }
+            const double WIN = 20.0;
+            var nums = new Dictionary<string, HashSet<string>>();
+            var t0 = new Dictionary<string, double>();
+            var t1 = new Dictionary<string, double>();
+            foreach (var m in allMsgs)
+            {
+                string c = m.CallId;
+                if (string.IsNullOrEmpty(c) || c == "?") continue;
+                if (!nums.ContainsKey(c)) { nums[c] = new HashSet<string>(); t0[c] = m.RelSec; t1[c] = m.RelSec; }
+                string a = NormNum(m.FromUser), b = NormNum(m.ToUser);
+                if (a != null) nums[c].Add(a);
+                if (b != null) nums[c].Add(b);
+                if (m.RelSec < t0[c]) t0[c] = m.RelSec;
+                if (m.RelSec > t1[c]) t1[c] = m.RelSec;
+            }
+            var ids = new List<string>(nums.Keys);
+            var parent = new Dictionary<string, string>();
+            foreach (var id in ids) parent[id] = id;
+            Func<string, string> find = null;
+            find = x => { while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+            for (int i = 0; i < ids.Count; i++)
+                for (int j = i + 1; j < ids.Count; j++)
+                {
+                    string A = ids[i], B = ids[j];
+                    bool timeClose = !(t1[A] < t0[B] - WIN || t1[B] < t0[A] - WIN);
+                    if (timeClose && nums[A].Overlaps(nums[B]))
+                    {
+                        string ra = find(A), rb = find(B);
+                        if (ra != rb) parent[ra] = rb;
+                    }
+                }
+            foreach (var m in allMsgs)
+            {
+                if (string.IsNullOrEmpty(m.CallId) || m.CallId == "?") { m.Group = m.CallId; continue; }
+                m.Group = find(m.CallId);
             }
         }
 
@@ -1223,6 +1314,8 @@ namespace LosaTermVoip
         public void LoadMessages(List<SipLadderMessage> messages, string voipStats, string sipStats)
         {
             allMsgs = messages ?? new List<SipLadderMessage>();
+            lastVoip = voipStats; lastSip = sipStats;
+            RecomputeGroups(IsLogicalMode());
 
             // ── Popola combo chiamate: "Calling → Called [HH:mm:ss]" ──────────
             // Per ogni Call-ID unico, cerchiamo il primo messaggio INVITE/Setup
