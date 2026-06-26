@@ -1271,11 +1271,8 @@ namespace LosaTermVoip
 
             var mLang = new ToolStripMenuItem("🌐 " + L.T("menu.language"));
             var langItems = new[] {
-                new { Code="IT", Label="🇮🇹  Italiano" },
                 new { Code="EN", Label="🇬🇧  English"  },
-                new { Code="FR", Label="🇫🇷  Français" },
-                new { Code="DE", Label="🇩🇪  Deutsch"  },
-                new { Code="ES", Label="🇪🇸  Español"  },
+                new { Code="IT", Label="🇮🇹  Italiano" },
             };
             foreach (var li in langItems)
             {
@@ -1296,10 +1293,23 @@ namespace LosaTermVoip
             mHelp.DropDownItems.Add(new ToolStripSeparator());
             mHelp.DropDownItems.Add(L.T("help.about"),   null, (s,e)=>{ using (var d = new AboutDialog()) d.ShowDialog(this); });
 
+            var mVoip = new ToolStripMenuItem("🧰 VoIP");
+            mVoip.DropDownItems.Add("🩺 SIP Health Check (1-click)", null, (s, e) => OpenHealthCheck());
+            mVoip.DropDownItems.Add(new ToolStripSeparator());
+            mVoip.DropDownItems.Add("🔴 Cattura LIVE → pcap",  null, (s, e) => OpenLiveCapture());
+            mVoip.DropDownItems.Add("🎧 RTP Player & DTMF",   null, (s, e) => OpenRtpPlayer());
+            mVoip.DropDownItems.Add("📡 SIP OPTIONS Monitor", null, (s, e) => OpenOptionsMonitor());
+            mVoip.DropDownItems.Add("🔑 SIP Registration Live", null, (s, e) => OpenSipRegister());
+            mVoip.DropDownItems.Add("🚀 Generatore traffico (load)", null, (s, e) => OpenTrafficGen());
+            mVoip.DropDownItems.Add("🌐 DNS VoIP Analyzer",   null, (s, e) => OpenDnsVoip());
+            mVoip.DropDownItems.Add("🛰️ Tester STUN / NAT",   null, (s, e) => OpenStunTester());
+            mVoip.DropDownItems.Add("🔥 Firewall port-check",  null, (s, e) => OpenFirewallCheck());
+            mVoip.DropDownItems.Add("🧮 Calcolatori VoIP",    null, (s, e) => OpenVoipCalc());
+
             var mInfo = new ToolStripMenuItem("ℹ️ Info");
             mInfo.Click += (s, e) => ShowNetInfo();
 
-            menu.Items.AddRange(new ToolStripItem[] { mC, mT, mLang, mInfo, mHelp });
+            menu.Items.AddRange(new ToolStripItem[] { mC, mT, mLang, mVoip, mInfo, mHelp });
             MainMenuStrip = menu;
 
             var tb = new ToolStrip { Dock = DockStyle.Top };
@@ -1700,6 +1710,16 @@ namespace LosaTermVoip
         SyslogServerPanel  syslogForm;
         SbcHealthPanel     sbcHealthForm;
         NetToolsPanel      netToolsForm;
+        RtpPlayerPanel     rtpForm;
+        OptionsMonitorPanel optMonForm;
+        DnsVoipPanel       dnsForm;
+        HealthCheckPanel   healthForm;
+        FirewallCheckPanel fwForm;
+        LiveCapturePanel   liveCapForm;
+        SipRegisterPanel   regForm;
+        TrafficGenPanel    trafficForm;
+        VoipCalcPanel      voipCalcForm;
+        StunTesterPanel    stunForm;
 
         void OpenServerManager()
         {
@@ -1764,6 +1784,67 @@ namespace LosaTermVoip
             } catch (Exception ex) {
                 MessageBox.Show("Errore Net Tools:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        void OpenRtpPlayer()
+        {
+            try { if (rtpForm == null || rtpForm.IsDisposed) rtpForm = new RtpPlayerPanel();
+                  try { rtpForm.Icon = AppIcon.Shared; } catch { } rtpForm.Show(this); rtpForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show("Errore RTP Player:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenOptionsMonitor()
+        {
+            try { if (optMonForm == null || optMonForm.IsDisposed) optMonForm = new OptionsMonitorPanel();
+                  try { optMonForm.Icon = AppIcon.Shared; } catch { } optMonForm.Show(this); optMonForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show("Errore OPTIONS Monitor:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenVoipCalc()
+        {
+            try { if (voipCalcForm == null || voipCalcForm.IsDisposed) voipCalcForm = new VoipCalcPanel();
+                  try { voipCalcForm.Icon = AppIcon.Shared; } catch { } voipCalcForm.Show(this); voipCalcForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show("Errore Calcolatori:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenTrafficGen()
+        {
+            try { if (trafficForm == null || trafficForm.IsDisposed) trafficForm = new TrafficGenPanel();
+                  try { trafficForm.Icon = AppIcon.Shared; } catch { } trafficForm.Show(this); trafficForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show("Errore Generatore traffico:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenSipRegister()
+        {
+            try { if (regForm == null || regForm.IsDisposed) regForm = new SipRegisterPanel();
+                  try { regForm.Icon = AppIcon.Shared; } catch { } regForm.Show(this); regForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show("Errore SIP Register:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenLiveCapture()
+        {
+            try { if (liveCapForm == null || liveCapForm.IsDisposed) { liveCapForm = new LiveCapturePanel(); liveCapForm.OnAnalyze = p => OpenPcapFile(p); }
+                  try { liveCapForm.Icon = AppIcon.Shared; } catch { } liveCapForm.Show(this); liveCapForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show("Errore Cattura LIVE:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenHealthCheck()
+        {
+            try { if (healthForm == null || healthForm.IsDisposed) healthForm = new HealthCheckPanel();
+                  try { healthForm.Icon = AppIcon.Shared; } catch { } healthForm.Show(this); healthForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show("Errore Health Check:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenDnsVoip()
+        {
+            try { if (dnsForm == null || dnsForm.IsDisposed) dnsForm = new DnsVoipPanel();
+                  try { dnsForm.Icon = AppIcon.Shared; } catch { } dnsForm.Show(this); dnsForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show("Errore DNS Analyzer:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenFirewallCheck()
+        {
+            try { if (fwForm == null || fwForm.IsDisposed) fwForm = new FirewallCheckPanel();
+                  try { fwForm.Icon = AppIcon.Shared; } catch { } fwForm.Show(this); fwForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show("Errore Firewall Check:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenStunTester()
+        {
+            try { if (stunForm == null || stunForm.IsDisposed) stunForm = new StunTesterPanel();
+                  try { stunForm.Icon = AppIcon.Shared; } catch { } stunForm.Show(this); stunForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show("Errore STUN Tester:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
 
         void OpenSerial()
@@ -2143,7 +2224,7 @@ namespace LosaTermVoip
         void ShowNetInfo()
         {
             var f = new Form {
-                Text = "ℹ️ Info Rete", Size = new Size(440, 300),
+                Text = L.B("ℹ️ Info Rete","ℹ️ Network Info"), Size = new Size(440, 300),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false,
                 BackColor = Color.FromArgb(24, 24, 32)
@@ -2156,10 +2237,10 @@ namespace LosaTermVoip
                 Text = GetNetInfoText()
             };
             var bottom = new Panel { Dock = DockStyle.Bottom, Height = 40, BackColor = Color.FromArgb(24, 24, 32), Padding = new Padding(6) };
-            var btnCopy = new Button { Text = "📋 Copia", Dock = DockStyle.Right, Width = 100, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(40, 80, 140) };
+            var btnCopy = new Button { Text = L.B("📋 Copia","📋 Copy"), Dock = DockStyle.Right, Width = 100, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(40, 80, 140) };
             btnCopy.FlatAppearance.BorderSize = 0;
             btnCopy.Click += (s, e) => { try { Clipboard.SetText(txt.Text); } catch { } };
-            var btnRefresh = new Button { Text = "🔄 Aggiorna", Dock = DockStyle.Right, Width = 105, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(60, 60, 80) };
+            var btnRefresh = new Button { Text = L.B("🔄 Aggiorna","🔄 Refresh"), Dock = DockStyle.Right, Width = 105, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(60, 60, 80) };
             btnRefresh.FlatAppearance.BorderSize = 0;
             btnRefresh.Click += (s, e) => txt.Text = GetNetInfoText();
             bottom.Controls.Add(btnCopy); bottom.Controls.Add(btnRefresh);
@@ -2201,14 +2282,14 @@ namespace LosaTermVoip
             catch { }
             var sb = new StringBuilder();
             sb.AppendLine();
-            sb.AppendLine("  Interfaccia     : " + iface);
-            sb.AppendLine("  IP              : " + primaryIp);
-            sb.AppendLine("  Subnet mask     : " + subnet);
-            sb.AppendLine("  Default gateway : " + gw);
-            sb.AppendLine("  DNS             : " + dns);
-            sb.AppendLine("  MAC             : " + mac);
+            sb.AppendLine("  " + L.B("Interfaccia","Interface").PadRight(15) + ": " + iface);
+            sb.AppendLine("  " + "IP".PadRight(15) + ": " + primaryIp);
+            sb.AppendLine("  " + L.B("Subnet mask","Subnet mask").PadRight(15) + ": " + subnet);
+            sb.AppendLine("  " + L.B("Default gateway","Default gateway").PadRight(15) + ": " + gw);
+            sb.AppendLine("  " + "DNS".PadRight(15) + ": " + dns);
+            sb.AppendLine("  " + "MAC".PadRight(15) + ": " + mac);
             if (vip != null)
-                sb.AppendLine("  IP VPN          : " + vip);
+                sb.AppendLine("  " + L.B("IP VPN","VPN IP").PadRight(15) + ": " + vip);
             return sb.ToString();
         }
 

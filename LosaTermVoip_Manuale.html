@@ -175,6 +175,42 @@
 </section>
 
 <section>
+<h2>🧰 Menu VoIP — suite diagnostica</h2>
+<p>Il menu <strong>🧰 VoIP</strong> (in alto) raccoglie una suite di strumenti di diagnostica Voice/UC, quasi tutti nativi (eccezione: <em>Cattura LIVE</em> e <em>RTP Player</em> usano tshark/dumpcap di Wireshark).</p>
+
+<h3>🩺 SIP Health Check (1-click)</h3>
+<p>Inserisci un dominio (o <code>sip:utente@dominio</code>) e con un clic esegue in sequenza <strong>DNS NAPTR → SRV → A/AAAA → TLS+certificato → SIP OPTIONS</strong>, restituendo un report colorato con <strong>punteggio 0-100</strong> ed elenco dei problemi. La via più rapida per capire "perché il trunk non va".</p>
+
+<h3>🔴 Cattura LIVE → pcap</h3>
+<p>Scegli l'interfaccia (mostra anche l'IP), imposta un filtro BPF (preset <strong>VoIP</strong>: 5060/5061/3478/5349 + RTP) e cattura in tempo reale con <code>dumpcap</code>. <strong>🪜 Apri nel Ladder</strong> analizza subito la cattura nel diagramma SIP. Richiede Wireshark + Npcap.</p>
+
+<h3>🎧 RTP Player &amp; DTMF</h3>
+<p>Da un PCAP elenca gli stream RTP e ne <strong>riproduce l'audio</strong> (G.711 µ-law/A-law → WAV): senti subito audio monodirezionale, gap, fruscii. Estrae anche le <strong>cifre DTMF</strong> (RFC 2833) e salva il WAV.</p>
+
+<h3>📡 SIP OPTIONS Monitor</h3>
+<p>Watchdog continuo di uno o più trunk: invia OPTIONS a intervallo e mostra in tabella live <strong>stato, RTT, uptime %, ultimo OK/errore</strong> (verde/rosso).</p>
+
+<h3>🔑 SIP Registration Live</h3>
+<p>Registra un account SIP con <strong>autenticazione Digest MD5</strong> (gestisce il challenge 401/407: realm/nonce/qop) e mostra l'Expires concesso. Con "Mantieni registrato" fa il <strong>refresh automatico</strong>; pulsante per de-registrare (Expires 0).</p>
+
+<h3>🚀 Generatore traffico (load)</h3>
+<p>Mini-SIPp: invia OPTIONS/REGISTER a <strong>CPS</strong> configurabile e conta risposte per codice, timeout e <strong>RTT min/avg/max</strong>.</p>
+
+<h3>🌐 DNS VoIP Analyzer + ENUM</h3>
+<p>Analizza i record DNS di un dominio SIP: <strong>NAPTR → SRV (_sip/_sips) → A/AAAA</strong> + TXT/MX/NS, con interpretazione (SIP over TLS/TCP/UDP) e warning sui record mancanti. <strong>ENUM</strong>: da un numero E.164 risale al SIP URI via e164.arpa.</p>
+
+<h3>🛰️ Tester STUN / NAT</h3>
+<p>Scopre l'<strong>IP pubblico riflesso</strong> (server-reflexive) e classifica il <strong>tipo di NAT</strong> (confronto a due server): "cone" (RTP OK con STUN) vs <strong>simmetrico</strong> (RTP monodirezionale senza TURN/SBC). Utile per Teams Direct Routing / WebRTC.</p>
+
+<h3>🔥 Firewall port-check VoIP</h3>
+<p>Verifica le porte tipiche verso un host/SBC: TCP (5060/5061/3478/5349/443/80/22) con connect, e probe UDP <strong>reali</strong> (SIP OPTIONS sulla 5060, STUN sulla 3478). Distingue Aperta / Chiusa (RST) / Filtrata (timeout).</p>
+
+<h3>🧮 Calcolatori VoIP</h3>
+<p>Tre calcolatori: <strong>banda per codec</strong> (G.711/729/Opus… + ptime + overhead L2 + VAD), <strong>budget MOS</strong> (E-model: delay/jitter/loss → R-factor e MOS) e riferimento <strong>QoS/DSCP</strong> (EF/CS3/AF31…).</p>
+<div class="warn-box"><em>Cattura LIVE</em> e <em>RTP Player</em> richiedono <strong>Wireshark/Npcap</strong>. Il <em>Generatore traffico</em> e gli strumenti che inviano SIP vanno usati <strong>solo su reti/sistemi di cui hai autorizzazione</strong>.</div>
+</section>
+
+<section>
 <h2>🌐 Lingua, layout, feedback</h2>
 <p>Interfaccia multilingua (IT/EN/FR/DE/ES): menu <strong>🌐 Language</strong> → scegli la lingua e riavvia per applicare. Posizione/dimensione finestra e ordine connessioni vengono salvati. Per feedback e donazioni usa il menu <strong>❓</strong> o il sito.</p>
 </section>
@@ -306,6 +342,42 @@
 <h2>📖 Doc &amp; 🖱️ Drag &amp; Drop</h2>
 <p><strong>📖 Doc</strong>: an editable, categorized link collection (CUCM SRND, AudioCodes, etc.) — double-click opens in the browser.</p>
 <p><strong>Drag &amp; Drop</strong>: drop a file on the window and choose what to do — PCAP → analyze in the Ladder; SDL trace → TranslatorX; syslog/log → Syslog viewer.</p>
+</section>
+
+<section>
+<h2>🧰 VoIP menu — diagnostic suite</h2>
+<p>The <strong>🧰 VoIP</strong> menu (top bar) groups a suite of Voice/UC diagnostic tools, almost all native (exception: <em>Live Capture</em> and <em>RTP Player</em> use Wireshark's tshark/dumpcap).</p>
+
+<h3>🩺 SIP Health Check (1-click)</h3>
+<p>Enter a domain (or <code>sip:user@domain</code>) and one click runs <strong>DNS NAPTR → SRV → A/AAAA → TLS+certificate → SIP OPTIONS</strong> in sequence, returning a colored report with a <strong>0-100 score</strong> and the list of issues. The fastest way to find out "why the trunk is down".</p>
+
+<h3>🔴 Live Capture → pcap</h3>
+<p>Pick the interface (it also shows the IP), set a BPF filter (<strong>VoIP</strong> preset: 5060/5061/3478/5349 + RTP) and capture live with <code>dumpcap</code>. <strong>🪜 Open in Ladder</strong> analyzes the capture in the SIP diagram right away. Requires Wireshark + Npcap.</p>
+
+<h3>🎧 RTP Player &amp; DTMF</h3>
+<p>From a PCAP it lists RTP streams and <strong>plays the audio</strong> (G.711 µ-law/A-law → WAV): hear one-way audio, gaps, noise immediately. Also extracts <strong>DTMF digits</strong> (RFC 2833) and saves the WAV.</p>
+
+<h3>📡 SIP OPTIONS Monitor</h3>
+<p>Continuous watchdog of one or more trunks: sends OPTIONS at an interval and shows <strong>status, RTT, uptime %, last OK/error</strong> (green/red) in a live table.</p>
+
+<h3>🔑 SIP Registration Live</h3>
+<p>Registers a SIP account with <strong>Digest MD5 authentication</strong> (handles the 401/407 challenge: realm/nonce/qop) and shows the granted Expires. With "Keep registered" it <strong>auto-refreshes</strong>; a button de-registers (Expires 0).</p>
+
+<h3>🚀 Traffic generator (load)</h3>
+<p>Mini-SIPp: sends OPTIONS/REGISTER at a configurable <strong>CPS</strong> and counts responses per code, timeouts and <strong>RTT min/avg/max</strong>.</p>
+
+<h3>🌐 DNS VoIP Analyzer + ENUM</h3>
+<p>Analyzes a SIP domain's DNS: <strong>NAPTR → SRV (_sip/_sips) → A/AAAA</strong> + TXT/MX/NS, with interpretation (SIP over TLS/TCP/UDP) and warnings for missing records. <strong>ENUM</strong>: resolves an E.164 number to a SIP URI via e164.arpa.</p>
+
+<h3>🛰️ STUN / NAT Tester</h3>
+<p>Discovers the <strong>reflexive public IP</strong> (server-reflexive) and classifies the <strong>NAT type</strong> (two-server comparison): "cone" (RTP OK with STUN) vs <strong>symmetric</strong> (one-way RTP without TURN/SBC). Handy for Teams Direct Routing / WebRTC.</p>
+
+<h3>🔥 VoIP firewall port-check</h3>
+<p>Checks the typical ports toward a host/SBC: TCP (5060/5061/3478/5349/443/80/22) via connect, plus <strong>real</strong> UDP probes (SIP OPTIONS on 5060, STUN on 3478). Distinguishes Open / Closed (RST) / Filtered (timeout).</p>
+
+<h3>🧮 VoIP calculators</h3>
+<p>Three calculators: <strong>bandwidth per codec</strong> (G.711/729/Opus… + ptime + L2 overhead + VAD), <strong>MOS budget</strong> (E-model: delay/jitter/loss → R-factor and MOS) and a <strong>QoS/DSCP</strong> reference (EF/CS3/AF31…).</p>
+<div class="warn-box"><em>Live Capture</em> and <em>RTP Player</em> require <strong>Wireshark/Npcap</strong>. The <em>traffic generator</em> and the SIP-sending tools must be used <strong>only on networks/systems you are authorized to test</strong>.</div>
 </section>
 
 <section>

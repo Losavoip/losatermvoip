@@ -12,7 +12,7 @@ namespace LosaTermVoip
 
     public static class L
     {
-        static string _lang = "IT";
+        static string _lang = "EN";   // default Inglese
         public static string CurrentLang { get { return _lang; } private set { _lang = value; } }
 
         // Tutte le stringhe dell'app
@@ -372,7 +372,7 @@ namespace LosaTermVoip
         // Mappa codice lingua → indice
         static readonly Dictionary<string, int> LangIndex = new Dictionary<string, int>
         {
-            { "IT", 0 }, { "EN", 1 }, { "FR", 2 }, { "DE", 3 }, { "ES", 4 }
+            { "IT", 0 }, { "EN", 1 }   // solo IT/EN (FR/DE/ES dismessi)
         };
 
         // ── API pubblica ──────────────────────────────────────────────────────
@@ -389,6 +389,9 @@ namespace LosaTermVoip
         {
             return string.Format(T(key), args);
         }
+
+        // Helper bilingue per i pannelli nuovi: IT se lingua italiana, altrimenti EN.
+        public static string B(string it, string en) { return CurrentLang == "IT" ? it : en; }
 
         // ── Caricamento e salvataggio ─────────────────────────────────────────
         public static void Load()
