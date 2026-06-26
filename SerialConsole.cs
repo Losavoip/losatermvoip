@@ -14,12 +14,14 @@ namespace LosaTermVoip
     public class SerialConsolePanel : Form
     {
         ComboBox cmbPort, cmbBaud;
+        CheckBox chkStandalone;
         public string SelectedCom, SelectedBaud;
+        public bool Standalone;
 
         public SerialConsolePanel()
         {
             Text = "Console Seriale (PuTTY)";
-            Size = new Size(430, 210);
+            Size = new Size(440, 250);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = MinimizeBox = false;
             StartPosition = FormStartPosition.CenterParent;
@@ -46,13 +48,18 @@ namespace LosaTermVoip
             cmbBaud.SelectedIndex = 0;   // Cisco console default
             Controls.Add(cmbBaud);
 
-            var btnGo = MkBtn("▶ Apri nel tab", 20, 110, 300, Color.FromArgb(30, 110, 30));
+            chkStandalone = new CheckBox { Text = "🪟 Finestra separata (più stabile)", Location = new Point(20, 92),
+                AutoSize = true, ForeColor = Color.LightGray, Checked = true };
+            new ToolTip().SetToolTip(chkStandalone, "Apre PuTTY come finestra a sé (consigliato per la seriale). Deseleziona per embeddarla in un tab.");
+            Controls.Add(chkStandalone);
+
+            var btnGo = MkBtn("▶ Apri console", 20, 126, 300, Color.FromArgb(30, 110, 30));
             btnGo.Click += (s, e) => Launch();
             AcceptButton = btnGo;
             Controls.Add(btnGo);
 
-            Controls.Add(new Label { Text = "Apre una console seriale (PuTTY) embeddata in un tab — 8N1, no flow.",
-                Location = new Point(20, 152), AutoSize = true, ForeColor = Color.Gray });
+            Controls.Add(new Label { Text = "Console seriale via PuTTY — 8N1, niente flow control.",
+                Location = new Point(20, 168), AutoSize = true, ForeColor = Color.Gray });
 
             RefreshPorts();
         }
@@ -73,6 +80,7 @@ namespace LosaTermVoip
             { MessageBox.Show("Nessuna porta COM trovata. Collega un adattatore USB-seriale e premi 🔄.", "Console Seriale"); return; }
             SelectedCom  = com;
             SelectedBaud = (cmbBaud.SelectedItem as string) ?? "9600";
+            Standalone   = chkStandalone.Checked;
             DialogResult = DialogResult.OK;
             Close();
         }

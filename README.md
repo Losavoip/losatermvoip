@@ -9,8 +9,8 @@ design: the SIP / RTP / TLS / DNS tools work the same whether the box is **Cisco
 Microsoft Teams (Direct Routing), AudioCodes, Ribbon, Alcatel (OXE/OXO) or
 Sangoma/Asterisk**.
 
-> ⚠️ **Beta.** It works and it's already useful, but it's young — expect rough
-> edges and please send feedback.
+> ✅ **Stable (v1.1).** Field-tested and ready for daily use — feedback is
+> still very welcome to keep it growing.
 
 ---
 

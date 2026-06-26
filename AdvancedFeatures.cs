@@ -779,7 +779,7 @@ namespace LosaTermVoip
 
         static Label ML(string t, int x, int y)
         {
-            return new Label { Text=t, Location=new Point(x,y+2), Width=120, ForeColor=Color.LightGray };
+            return new Label { Text=t, Location=new Point(x,y+2), AutoSize=true, ForeColor=Color.LightGray };
         }
         static TextBox MT(int x, int y, int w)
         {

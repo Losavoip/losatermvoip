@@ -574,6 +574,21 @@ namespace LosaTermVoip
         {
             try { if (puttyProc != null && !puttyProc.HasExited) puttyProc.Kill(); } catch { }
         }
+
+        // Stacca PuTTY dall'embed: torna finestra top-level con cornice/titolo, vivo.
+        public IntPtr DetachWindow()
+        {
+            if (puttyHwnd == IntPtr.Zero) return IntPtr.Zero;
+            Win32.SetParent(puttyHwnd, IntPtr.Zero);
+            int style = Win32.GetWindowLong(puttyHwnd, Win32.GWL_STYLE);
+            style |= Win32.WS_CAPTION | Win32.WS_THICKFRAME | Win32.WS_SYSMENU;
+            Win32.SetWindowLong(puttyHwnd, Win32.GWL_STYLE, style);
+            Win32.SetWindowPos(puttyHwnd, IntPtr.Zero, 220, 140, 900, 560, Win32.SWP_NOZORDER);
+            Win32.ShowWindow(puttyHwnd, Win32.SW_SHOW);
+            IntPtr h = puttyHwnd;
+            puttyHwnd = IntPtr.Zero;   // non più embedded: il tab può chiudersi senza toccare PuTTY
+            return h;
+        }
     }
 
     // ─── UI helpers ───────────────────────────────────────────────────────────
@@ -1157,8 +1172,9 @@ namespace LosaTermVoip
         // Pulsanti sessione SSH nel ToolStrip principale (immune a PuTTY HWND)
         ToolStripSeparator tssSsh;
         ToolStripLabel     tslSshInfo;
-        ToolStripButton    tsbAnalyzer, tsbLog, tsbClose;
+        ToolStripButton    tsbAnalyzer, tsbLog, tsbClose, tsbDetach;
         ToolStripLabel     tslIp;   // IP locale (+ VPN) sempre visibile in alto a destra
+        ToolStripDropDownButton tsbSessions;   // selettore sessioni/tab aperti
         Dictionary<TabPage, SshTab> sshSessions = new Dictionary<TabPage, SshTab>();
 
         // Claude Desktop embedded
@@ -1280,7 +1296,10 @@ namespace LosaTermVoip
             mHelp.DropDownItems.Add(new ToolStripSeparator());
             mHelp.DropDownItems.Add(L.T("help.about"),   null, (s,e)=>{ using (var d = new AboutDialog()) d.ShowDialog(this); });
 
-            menu.Items.AddRange(new ToolStripItem[] { mC, mT, mLang, mHelp });
+            var mInfo = new ToolStripMenuItem("ℹ️ Info");
+            mInfo.Click += (s, e) => ShowNetInfo();
+
+            menu.Items.AddRange(new ToolStripItem[] { mC, mT, mLang, mInfo, mHelp });
             MainMenuStrip = menu;
 
             var tb = new ToolStrip { Dock = DockStyle.Top };
@@ -1290,7 +1309,6 @@ namespace LosaTermVoip
             tb.Items.Add(new ToolStripSeparator());
             tb.Items.Add(TBtn("▶ SSH",      (s,e)=>Connect()));
             tb.Items.Add(TBtn("SSH ↗",      (s,e)=>ConnectStandalone()));
-            tb.Items.Add(TBtn("SFTP",       (s,e)=>OpenSftp()));
             tb.Items.Add(TBtn("SCP",        (s,e)=>OpenScp()));
             tb.Items.Add(TBtn("FTP",        (s,e)=>OpenFtp()));
             tb.Items.Add(new ToolStripSeparator());
@@ -1375,6 +1393,45 @@ namespace LosaTermVoip
             };
             tb.Items.Add(tslIp);
 
+            // ── Selettore sessioni/tab aperti (in alto a destra) ──
+            tsbSessions = new ToolStripDropDownButton("🗂 Sessioni (1)") {
+                Alignment    = ToolStripItemAlignment.Right,
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                ForeColor    = Color.FromArgb(180, 220, 255),
+                Font         = new Font("Segoe UI", 9, FontStyle.Bold),
+                ToolTipText  = "Tutte le sessioni/schede aperte — clicca per saltare a una",
+                DropDownDirection = ToolStripDropDownDirection.Left   // pulsante a destra → apri verso sinistra
+            };
+            tsbSessions.DropDownOpening += (s, e) => {
+                tsbSessions.DropDownItems.Clear();
+                var closable = new List<TabPage>();
+                foreach (TabPage tp in tabMain.TabPages)
+                {
+                    var page = tp;   // cattura per la closure
+                    var it = new ToolStripMenuItem(page.Text.Trim());
+                    it.Checked = (tabMain.SelectedTab == page);
+                    it.Click += (s2, e2) => { tabMain.SelectedTab = page; };
+                    tsbSessions.DropDownItems.Add(it);
+                    if (page != tabLog) closable.Add(page);
+                }
+                if (closable.Count > 0)
+                {
+                    tsbSessions.DropDownItems.Add(new ToolStripSeparator());
+                    // Voci di chiusura DIRETTE (niente sottomenu: su monitor a destra volava fuori schermo)
+                    foreach (var tp in closable)
+                    {
+                        var page = tp;
+                        var ci = new ToolStripMenuItem("✕ Chiudi: " + page.Text.Trim()) { ForeColor = Color.Firebrick };
+                        ci.Click += (s2, e2) => CloseTab(page);
+                        tsbSessions.DropDownItems.Add(ci);
+                    }
+                }
+            };
+            tb.Items.Add(tsbSessions);
+
+            // Tutte le scritte della toolbar in nero (look pulito su barra chiara)
+            foreach (ToolStripItem _it in tb.Items) _it.ForeColor = Color.Black;
+
             // ── Sezione SSH sessione attiva (nel ToolStrip, immune a PuTTY HWND) ──
             tssSsh = new ToolStripSeparator { Visible = false };
             tslSshInfo = new ToolStripLabel("") {
@@ -1394,6 +1451,13 @@ namespace LosaTermVoip
                 Font = new Font("Segoe UI", 8),
                 Visible = false
             };
+            tsbDetach = new ToolStripButton("⧉ Stacca") {
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                ForeColor = Color.White, BackColor = Color.FromArgb(40, 70, 120),
+                Font = new Font("Segoe UI", 8, FontStyle.Bold),
+                ToolTipText = "Stacca questa sessione in una finestra separata (per vederne due affiancate)",
+                Visible = false
+            };
             tsbClose = new ToolStripButton("✕ Chiudi") {
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 ForeColor = Color.White, BackColor = Color.FromArgb(160, 30, 30),
@@ -1402,11 +1466,13 @@ namespace LosaTermVoip
             };
             tsbAnalyzer.Click += (s, e) => { var st = tslSshInfo.Tag as SshTab; if (st != null) st.ToggleAnalyzer(); };
             tsbLog.Click      += (s, e) => { var st = tslSshInfo.Tag as SshTab; if (st != null) st.OpenLog(); };
+            tsbDetach.Click   += (s, e) => DetachSession(tabMain.SelectedTab);
             tsbClose.Click    += (s, e) => { var st = tslSshInfo.Tag as SshTab; if (st != null) st.CloseSession(); };
             tb.Items.Add(tssSsh);
             tb.Items.Add(tslSshInfo);
             tb.Items.Add(tsbAnalyzer);
             tb.Items.Add(tsbLog);
+            tb.Items.Add(tsbDetach);
             tb.Items.Add(tsbClose);
 
             // Ordine corretto Dock=Top: aggiungi ToolStrip PRIMA, MenuStrip DOPO
@@ -1458,6 +1524,25 @@ namespace LosaTermVoip
             // ── Area destra: solo tabMain (i pulsanti SSH sono nel ToolStrip sopra) ──
             tabMain = new TabControl { Dock = DockStyle.Fill };
             tabMain.SelectedIndexChanged += (s, e) => SyncSshBar();
+            // Chiusura tab: tasto centrale = chiudi al volo; tasto destro = menu "Chiudi"
+            tabMain.MouseUp += (s, e) => {
+                if (e.Button != MouseButtons.Middle && e.Button != MouseButtons.Right) return;
+                for (int i = 0; i < tabMain.TabPages.Count; i++)
+                    if (tabMain.GetTabRect(i).Contains(e.Location))
+                    {
+                        var page = tabMain.TabPages[i];
+                        if (page == tabLog) return;
+                        if (e.Button == MouseButtons.Middle) CloseTab(page);
+                        else {
+                            var cm = new ContextMenuStrip();
+                            if (sshSessions.ContainsKey(page))
+                                cm.Items.Add("⧉ Stacca in finestra", null, (s2, e2) => DetachSession(page));
+                            cm.Items.Add("✕ Chiudi questa sessione", null, (s2, e2) => CloseTab(page));
+                            cm.Show(tabMain, e.Location);
+                        }
+                        return;
+                    }
+            };
 
             tabLog = new TabPage("  Log  ");
             rtbLog = new RichTextBox { Dock = DockStyle.Fill, ReadOnly = true, BackColor = Color.FromArgb(20,20,20), ForeColor = Color.LightGreen, Font = new Font("Consolas", 9) };
@@ -1480,7 +1565,11 @@ namespace LosaTermVoip
 
         ToolStripButton TBtn(string text, EventHandler click)
         {
-            var b = new ToolStripButton(text) { DisplayStyle = ToolStripItemDisplayStyle.Text };
+            var b = new ToolStripButton(text) {
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                ForeColor = Color.Black,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold)
+            };
             b.Click += click; return b;
         }
 
@@ -1685,7 +1774,16 @@ namespace LosaTermVoip
             {
                 try { d.Icon = AppIcon.Shared; } catch { }
                 if (d.ShowDialog(this) == DialogResult.OK && !string.IsNullOrEmpty(d.SelectedCom))
-                    OpenSerialTab(d.SelectedCom, d.SelectedBaud, putty);
+                {
+                    if (d.Standalone)
+                    {
+                        try {
+                            Process.Start(putty, "-serial " + d.SelectedCom + " -sercfg " + d.SelectedBaud + ",8,n,1,N");
+                            Log("Seriale (finestra separata) → " + d.SelectedCom + " @ " + d.SelectedBaud);
+                        } catch (Exception ex) { MessageBox.Show("Errore avvio PuTTY:\n" + ex.Message, "Console Seriale"); }
+                    }
+                    else OpenSerialTab(d.SelectedCom, d.SelectedBaud, putty);
+                }
             }
         }
 
@@ -1876,8 +1974,38 @@ namespace LosaTermVoip
             SyncSshBar();
         }
 
+        // Stacca una sessione embedded in una finestra PuTTY separata (PuTTY resta vivo)
+        void DetachSession(TabPage page)
+        {
+            SshTab st;
+            if (page == null || page == tabLog || !sshSessions.TryGetValue(page, out st)) return;
+            IntPtr h = st.DetachWindow();
+            if (h == IntPtr.Zero)
+            { MessageBox.Show("La sessione è ancora in avvio: riprova tra un istante.", "Stacca sessione", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            sshSessions.Remove(page);            // togli il tab MA non chiudere PuTTY
+            tabMain.TabPages.Remove(page);
+            Log("Sessione staccata in finestra separata.");
+            SyncSshBar();
+        }
+
+        // Chiude un tab/sessione (il tab "Log" non si chiude mai)
+        void CloseTab(TabPage page)
+        {
+            if (page == null || page == tabLog) return;
+            SshTab st;
+            if (sshSessions.TryGetValue(page, out st)) st.CloseSession();   // killa PuTTY → RemoveSshTab rimuove il tab
+            else { tabMain.TabPages.Remove(page); SyncSshBar(); }
+        }
+
+        void UpdateSessionsButton()
+        {
+            if (tsbSessions == null || tabMain == null) return;
+            tsbSessions.Text = "🗂 Sessioni (" + tabMain.TabPages.Count + ")";
+        }
+
         void SyncSshBar()
         {
+            UpdateSessionsButton();
             var tab = tabMain.SelectedTab;
             SshTab st = null;
             bool hasSession = tab != null && sshSessions.TryGetValue(tab, out st);
@@ -1890,6 +2018,7 @@ namespace LosaTermVoip
                 tslSshInfo.Visible  = true;
                 tsbAnalyzer.Visible = true;
                 tsbLog.Visible      = true;
+                tsbDetach.Visible   = true;
                 tsbClose.Visible    = true;
             }
             else
@@ -1900,6 +2029,7 @@ namespace LosaTermVoip
                 tslSshInfo.Visible  = false;
                 tsbAnalyzer.Visible = false;
                 tsbLog.Visible      = false;
+                tsbDetach.Visible   = false;
                 tsbClose.Visible    = false;
             }
         }
@@ -2005,8 +2135,91 @@ namespace LosaTermVoip
                 string ip  = GetPrimaryIp();
                 string vip = GetVpnIp();
                 tslIp.Text = "🖧 IP: " + ip + (vip != null ? "    🔒 VPN: " + vip : "") + "  ";
-                tslIp.ForeColor = (vip != null) ? Color.FromArgb(120, 230, 160) : Color.FromArgb(120, 200, 230);
+                tslIp.ForeColor = Color.Black;
             }
+        }
+
+        // ── Menu "Info": IP, subnet, gateway, DNS, MAC (+ VPN) ────────────────
+        void ShowNetInfo()
+        {
+            var f = new Form {
+                Text = "ℹ️ Info Rete", Size = new Size(440, 300),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false,
+                BackColor = Color.FromArgb(24, 24, 32)
+            };
+            try { f.Icon = AppIcon.Shared; } catch { }
+            var txt = new TextBox {
+                Multiline = true, ReadOnly = true, Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(15, 15, 22), ForeColor = Color.Gainsboro,
+                Font = new Font("Consolas", 10), BorderStyle = BorderStyle.None,
+                Text = GetNetInfoText()
+            };
+            var bottom = new Panel { Dock = DockStyle.Bottom, Height = 40, BackColor = Color.FromArgb(24, 24, 32), Padding = new Padding(6) };
+            var btnCopy = new Button { Text = "📋 Copia", Dock = DockStyle.Right, Width = 100, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(40, 80, 140) };
+            btnCopy.FlatAppearance.BorderSize = 0;
+            btnCopy.Click += (s, e) => { try { Clipboard.SetText(txt.Text); } catch { } };
+            var btnRefresh = new Button { Text = "🔄 Aggiorna", Dock = DockStyle.Right, Width = 105, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(60, 60, 80) };
+            btnRefresh.FlatAppearance.BorderSize = 0;
+            btnRefresh.Click += (s, e) => txt.Text = GetNetInfoText();
+            bottom.Controls.Add(btnCopy); bottom.Controls.Add(btnRefresh);
+            f.Controls.Add(txt); f.Controls.Add(bottom);
+            f.ShowDialog(this);
+        }
+
+        string GetNetInfoText()
+        {
+            string primaryIp = GetPrimaryIp();
+            string vip = GetVpnIp();
+            string iface = "n/d", subnet = "n/d", gw = "n/d", dns = "n/d", mac = "n/d";
+            try
+            {
+                foreach (var ni in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (ni.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up) continue;
+                    if (ni.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Loopback) continue;
+                    var p = ni.GetIPProperties();
+                    foreach (var ua in p.UnicastAddresses)
+                    {
+                        if (ua.Address.AddressFamily != AddressFamily.InterNetwork) continue;
+                        if (ua.Address.ToString() != primaryIp) continue;
+                        iface = ni.Name;
+                        try { if (ua.IPv4Mask != null) subnet = ua.IPv4Mask.ToString(); } catch { }
+                        var gws = new List<string>();
+                        foreach (var g in p.GatewayAddresses)
+                            if (g.Address != null && g.Address.AddressFamily == AddressFamily.InterNetwork && g.Address.ToString() != "0.0.0.0")
+                                gws.Add(g.Address.ToString());
+                        if (gws.Count > 0) gw = string.Join(", ", gws.ToArray());
+                        var dl = new List<string>();
+                        foreach (var d in p.DnsAddresses)
+                            if (d.AddressFamily == AddressFamily.InterNetwork) dl.Add(d.ToString());
+                        if (dl.Count > 0) dns = string.Join(", ", dl.ToArray());
+                        try { mac = FormatMac(ni.GetPhysicalAddress()); } catch { }
+                    }
+                }
+            }
+            catch { }
+            var sb = new StringBuilder();
+            sb.AppendLine();
+            sb.AppendLine("  Interfaccia     : " + iface);
+            sb.AppendLine("  IP              : " + primaryIp);
+            sb.AppendLine("  Subnet mask     : " + subnet);
+            sb.AppendLine("  Default gateway : " + gw);
+            sb.AppendLine("  DNS             : " + dns);
+            sb.AppendLine("  MAC             : " + mac);
+            if (vip != null)
+                sb.AppendLine("  IP VPN          : " + vip);
+            return sb.ToString();
+        }
+
+        static string FormatMac(System.Net.NetworkInformation.PhysicalAddress pa)
+        {
+            if (pa == null) return "n/d";
+            byte[] b = pa.GetAddressBytes();
+            if (b == null || b.Length == 0) return "n/d";
+            var parts = new string[b.Length];
+            for (int i = 0; i < b.Length; i++) parts[i] = b[i].ToString("X2");
+            return string.Join(":", parts);
         }
 
         // IP principale del PC (interfaccia usata per uscire verso la rete)
