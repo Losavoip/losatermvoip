@@ -47,6 +47,9 @@ namespace LosaTermVoip
                 BackColor=Color.FromArgb(30,110,30), ForeColor=Color.White, Font=new Font("Segoe UI",9,FontStyle.Bold) };
             btnGo.FlatAppearance.BorderSize=0; btnGo.Click += (s,e)=>Run();
             top.Controls.Add(btnGo);
+            var btnSave = new Button { Text=L.B("💾 Salva","💾 Save"), Location=new Point(648,13), Width=95, Height=28, FlatStyle=FlatStyle.Flat,
+                BackColor=Color.FromArgb(60,60,80), ForeColor=Color.White, Font=new Font("Segoe UI",9,FontStyle.Bold) };
+            btnSave.FlatAppearance.BorderSize=0; btnSave.Click += (s,e)=>SaveReport(); top.Controls.Add(btnSave);
 
             lblScore = new Label { Dock=DockStyle.Bottom, Height=44, TextAlign=ContentAlignment.MiddleCenter,
                 Font=new Font("Segoe UI",14,FontStyle.Bold), ForeColor=Color.Gray, BackColor=Color.FromArgb(18,18,28), Text="—" };
@@ -275,5 +278,24 @@ namespace LosaTermVoip
         }
 
         void EnableBtn() { if (btnGo.IsHandleCreated) btnGo.BeginInvoke((MethodInvoker)delegate { btnGo.Enabled = true; }); }
+
+        void SaveReport()
+        {
+            if (rtb.TextLength == 0) { MessageBox.Show(L.B("Esegui prima una diagnosi.","Run a diagnosis first."), "LosaTermVoip"); return; }
+            using (var d = new SaveFileDialog { Filter = "Text (*.txt)|*.txt|HTML (*.html)|*.html", FileName = "sip_healthcheck_" + DateTime.Now.ToString("yyyyMMdd_HHmm") })
+            {
+                if (d.ShowDialog(this) != DialogResult.OK) return;
+                try
+                {
+                    string body = rtb.Text + "\r\n" + lblScore.Text + "\r\n\r\n— LosaTermVoip · " + DateTime.Now.ToString("yyyy-MM-dd HH:mm") + " —\r\n";
+                    if (d.FileName.ToLower().EndsWith(".html"))
+                        body = "<!doctype html><meta charset=utf-8><title>SIP Health Check</title>" +
+                               "<body style='background:#0d1117;color:#e6edf3;font-family:Consolas,monospace;padding:20px'><pre>" +
+                               System.Security.SecurityElement.Escape(body) + "</pre></body>";
+                    System.IO.File.WriteAllText(d.FileName, body, Encoding.UTF8);
+                }
+                catch (Exception ex) { MessageBox.Show(ex.Message, "LosaTermVoip"); }
+            }
+        }
     }
 }

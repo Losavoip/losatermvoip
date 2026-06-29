@@ -972,7 +972,7 @@ namespace LosaTermVoip
 
         void Download()
         {
-            if(lvFiles.SelectedItems.Count==0){MessageBox.Show("Seleziona un file.");return;} var item=lvFiles.SelectedItems[0]; if((bool)item.Tag){MessageBox.Show("Seleziona un file.");return;}
+            if(lvFiles.SelectedItems.Count==0){MessageBox.Show(L.B("Seleziona un file.","Select a file."));return;} var item=lvFiles.SelectedItems[0]; if((bool)item.Tag){MessageBox.Show(L.B("Seleziona un file.","Select a file."));return;}
             using(var dlg=new SaveFileDialog{FileName=item.Text}) if(dlg.ShowDialog()==DialogResult.OK){ string rp=currentPath.TrimEnd('/')+"/"+item.Text,lp=dlg.FileName; lblStatus.Text="Download: "+item.Text; ThreadPool.QueueUserWorkItem(_=>{ try{var req=MkReq(rp);req.Method=WebRequestMethods.Ftp.DownloadFile;using(var resp=(FtpWebResponse)req.GetResponse())using(var rs=resp.GetResponseStream())using(var fs=File.Create(lp))rs.CopyTo(fs);BeginInvoke((Action)(()=>lblStatus.Text="Download OK: "+item.Text));}catch(Exception ex){BeginInvoke((Action)(()=>lblStatus.Text="Errore: "+ex.Message));}}); }
         }
 
@@ -1296,6 +1296,7 @@ namespace LosaTermVoip
             var mVoip = new ToolStripMenuItem("🧰 VoIP");
             mVoip.DropDownItems.Add("🩺 SIP Health Check (1-click)", null, (s, e) => OpenHealthCheck());
             mVoip.DropDownItems.Add(new ToolStripSeparator());
+            mVoip.DropDownItems.Add("🗺️ Percorso di rete (LLDP/CDP)", null, (s, e) => OpenNetPath());
             mVoip.DropDownItems.Add("🔴 Cattura LIVE → pcap",  null, (s, e) => OpenLiveCapture());
             mVoip.DropDownItems.Add("🎧 RTP Player & DTMF",   null, (s, e) => OpenRtpPlayer());
             mVoip.DropDownItems.Add("📡 SIP OPTIONS Monitor", null, (s, e) => OpenOptionsMonitor());
@@ -1303,6 +1304,10 @@ namespace LosaTermVoip
             mVoip.DropDownItems.Add("🚀 Generatore traffico (load)", null, (s, e) => OpenTrafficGen());
             mVoip.DropDownItems.Add("🌐 DNS VoIP Analyzer",   null, (s, e) => OpenDnsVoip());
             mVoip.DropDownItems.Add("🛰️ Tester STUN / NAT",   null, (s, e) => OpenStunTester());
+            mVoip.DropDownItems.Add("🧬 Raw SIP / Header tester", null, (s, e) => OpenRawSip());
+            mVoip.DropDownItems.Add("🔐 SRTP / DTLS Analyzer", null, (s, e) => OpenSrtp());
+            mVoip.DropDownItems.Add("🛠️ Provisioning Viewer",  null, (s, e) => OpenProvisioning());
+            mVoip.DropDownItems.Add("🌐 SIP over WebSocket (WebRTC)", null, (s, e) => OpenWebRtc());
             mVoip.DropDownItems.Add("🔥 Firewall port-check",  null, (s, e) => OpenFirewallCheck());
             mVoip.DropDownItems.Add("🧮 Calcolatori VoIP",    null, (s, e) => OpenVoipCalc());
 
@@ -1603,7 +1608,7 @@ namespace LosaTermVoip
             }
         }
 
-        Connection Sel() { if(lvConn.SelectedItems.Count==0){MessageBox.Show("Seleziona una connessione.","Attenzione",MessageBoxButtons.OK,MessageBoxIcon.Information);return null;} return (Connection)lvConn.SelectedItems[0].Tag; }
+        Connection Sel() { if(lvConn.SelectedItems.Count==0){MessageBox.Show(L.B("Seleziona una connessione.","Select a connection."),L.B("Attenzione","Warning"),MessageBoxButtons.OK,MessageBoxIcon.Information);return null;} return (Connection)lvConn.SelectedItems[0].Tag; }
         void AddConn()  { using(var f=new EditConnectionForm()) if(f.ShowDialog()==DialogResult.OK){connections.Add(f.Result);ConnectionStore.Save(connections);RefreshList();Log("Aggiunta: "+f.Result.Name);} }
         void EditConn() { var c=Sel();if(c==null)return; using(var f=new EditConnectionForm(c)) if(f.ShowDialog()==DialogResult.OK){connections[connections.IndexOf(c)]=f.Result;ConnectionStore.Save(connections);RefreshList();Log("Modificata: "+f.Result.Name);} }
         void DelConn()  { var c=Sel();if(c==null)return; if(MessageBox.Show("Eliminare \""+c.Name+"\"?","Conferma",MessageBoxButtons.YesNo,MessageBoxIcon.Question)==DialogResult.Yes){connections.Remove(c);ConnectionStore.Save(connections);RefreshList();Log("Eliminata: "+c.Name);} }
@@ -1685,7 +1690,7 @@ namespace LosaTermVoip
             if (c.Protocol == "HTTP" || c.Protocol == "HTTPS") { OpenWebUrl(c); return; }
 
             string putty = TerminalLauncher.FindPutty();
-            if (putty == null) { MessageBox.Show("putty.exe non trovato.\n\nCopia putty.exe nella stessa cartella di NetTerm.exe\noppure in C:\\Program Files\\PuTTY\\","PuTTY mancante",MessageBoxButtons.OK,MessageBoxIcon.Warning); return; }
+            if (putty == null) { MessageBox.Show(L.B("putty.exe non trovato.\n\nCopia putty.exe accanto a LosaTermVoip.exe\noppure in C:\\Program Files\\PuTTY\\","putty.exe not found.\n\nCopy putty.exe next to LosaTermVoip.exe\nor into C:\\Program Files\\PuTTY\\"),L.B("PuTTY mancante","PuTTY missing"),MessageBoxButtons.OK,MessageBoxIcon.Warning); return; }
             if (!EnsureVpn(c)) { Log("VPN non connessa. Annullato."); return; }
 
             Log("SSH embedded → " + c.Username + "@" + c.Host);
@@ -1717,6 +1722,11 @@ namespace LosaTermVoip
         FirewallCheckPanel fwForm;
         LiveCapturePanel   liveCapForm;
         SipRegisterPanel   regForm;
+        NetPathPanel       netPathForm;
+        SrtpAnalyzerPanel  srtpForm;
+        ProvisioningPanel  provForm;
+        RawSipPanel        rawSipForm;
+        WebRtcPanel        webRtcForm;
         TrafficGenPanel    trafficForm;
         VoipCalcPanel      voipCalcForm;
         StunTesterPanel    stunForm;
@@ -1728,7 +1738,7 @@ namespace LosaTermVoip
                     serverManagerForm = new ServerManagerForm();
                 serverManagerForm.Show(this); serverManagerForm.BringToFront();
             } catch (Exception ex) {
-                MessageBox.Show("Errore Server Manager:\n" + ex.ToString(), "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(L.B("Errore ","Error ") + "Server Manager:\n" + ex.ToString(), "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1747,7 +1757,7 @@ namespace LosaTermVoip
                     docForm = new DocLinksPanel();
                 docForm.Show(this); docForm.BringToFront();
             } catch (Exception ex) {
-                MessageBox.Show("Errore Doc:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(L.B("Errore ","Error ") + "Doc:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1758,7 +1768,7 @@ namespace LosaTermVoip
                     syslogForm = new SyslogServerPanel();
                 syslogForm.Show(this); syslogForm.BringToFront();
             } catch (Exception ex) {
-                MessageBox.Show("Errore Syslog:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(L.B("Errore ","Error ") + "Syslog:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1770,7 +1780,7 @@ namespace LosaTermVoip
                 try { sbcHealthForm.Icon = AppIcon.Shared; } catch { }
                 sbcHealthForm.Show(this); sbcHealthForm.BringToFront();
             } catch (Exception ex) {
-                MessageBox.Show("Errore SBC Health:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(L.B("Errore ","Error ") + "SBC Health:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1782,7 +1792,7 @@ namespace LosaTermVoip
                 try { netToolsForm.Icon = AppIcon.Shared; } catch { }
                 netToolsForm.Show(this); netToolsForm.BringToFront();
             } catch (Exception ex) {
-                MessageBox.Show("Errore Net Tools:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(L.B("Errore ","Error ") + "Net Tools:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1790,61 +1800,91 @@ namespace LosaTermVoip
         {
             try { if (rtpForm == null || rtpForm.IsDisposed) rtpForm = new RtpPlayerPanel();
                   try { rtpForm.Icon = AppIcon.Shared; } catch { } rtpForm.Show(this); rtpForm.BringToFront(); }
-            catch (Exception ex) { MessageBox.Show("Errore RTP Player:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "RTP Player:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenOptionsMonitor()
         {
             try { if (optMonForm == null || optMonForm.IsDisposed) optMonForm = new OptionsMonitorPanel();
                   try { optMonForm.Icon = AppIcon.Shared; } catch { } optMonForm.Show(this); optMonForm.BringToFront(); }
-            catch (Exception ex) { MessageBox.Show("Errore OPTIONS Monitor:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "OPTIONS Monitor:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenVoipCalc()
         {
             try { if (voipCalcForm == null || voipCalcForm.IsDisposed) voipCalcForm = new VoipCalcPanel();
                   try { voipCalcForm.Icon = AppIcon.Shared; } catch { } voipCalcForm.Show(this); voipCalcForm.BringToFront(); }
-            catch (Exception ex) { MessageBox.Show("Errore Calcolatori:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Calcolatori:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenTrafficGen()
         {
             try { if (trafficForm == null || trafficForm.IsDisposed) trafficForm = new TrafficGenPanel();
                   try { trafficForm.Icon = AppIcon.Shared; } catch { } trafficForm.Show(this); trafficForm.BringToFront(); }
-            catch (Exception ex) { MessageBox.Show("Errore Generatore traffico:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Generatore traffico:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenSipRegister()
         {
             try { if (regForm == null || regForm.IsDisposed) regForm = new SipRegisterPanel();
                   try { regForm.Icon = AppIcon.Shared; } catch { } regForm.Show(this); regForm.BringToFront(); }
-            catch (Exception ex) { MessageBox.Show("Errore SIP Register:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "SIP Register:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenWebRtc()
+        {
+            try { if (webRtcForm == null || webRtcForm.IsDisposed) webRtcForm = new WebRtcPanel();
+                  try { webRtcForm.Icon = AppIcon.Shared; } catch { } webRtcForm.Show(this); webRtcForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "WebRTC:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenRawSip()
+        {
+            try { if (rawSipForm == null || rawSipForm.IsDisposed) rawSipForm = new RawSipPanel();
+                  try { rawSipForm.Icon = AppIcon.Shared; } catch { } rawSipForm.Show(this); rawSipForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Raw SIP:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenSrtp()
+        {
+            try { if (srtpForm == null || srtpForm.IsDisposed) srtpForm = new SrtpAnalyzerPanel();
+                  try { srtpForm.Icon = AppIcon.Shared; } catch { } srtpForm.Show(this); srtpForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "SRTP Analyzer:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenProvisioning()
+        {
+            try { if (provForm == null || provForm.IsDisposed) provForm = new ProvisioningPanel();
+                  try { provForm.Icon = AppIcon.Shared; } catch { } provForm.Show(this); provForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Provisioning:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenNetPath()
+        {
+            try { if (netPathForm == null || netPathForm.IsDisposed) netPathForm = new NetPathPanel();
+                  try { netPathForm.Icon = AppIcon.Shared; } catch { } netPathForm.Show(this); netPathForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Network Path:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenLiveCapture()
         {
             try { if (liveCapForm == null || liveCapForm.IsDisposed) { liveCapForm = new LiveCapturePanel(); liveCapForm.OnAnalyze = p => OpenPcapFile(p); }
                   try { liveCapForm.Icon = AppIcon.Shared; } catch { } liveCapForm.Show(this); liveCapForm.BringToFront(); }
-            catch (Exception ex) { MessageBox.Show("Errore Cattura LIVE:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Cattura LIVE:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenHealthCheck()
         {
             try { if (healthForm == null || healthForm.IsDisposed) healthForm = new HealthCheckPanel();
                   try { healthForm.Icon = AppIcon.Shared; } catch { } healthForm.Show(this); healthForm.BringToFront(); }
-            catch (Exception ex) { MessageBox.Show("Errore Health Check:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Health Check:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenDnsVoip()
         {
             try { if (dnsForm == null || dnsForm.IsDisposed) dnsForm = new DnsVoipPanel();
                   try { dnsForm.Icon = AppIcon.Shared; } catch { } dnsForm.Show(this); dnsForm.BringToFront(); }
-            catch (Exception ex) { MessageBox.Show("Errore DNS Analyzer:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "DNS Analyzer:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenFirewallCheck()
         {
             try { if (fwForm == null || fwForm.IsDisposed) fwForm = new FirewallCheckPanel();
                   try { fwForm.Icon = AppIcon.Shared; } catch { } fwForm.Show(this); fwForm.BringToFront(); }
-            catch (Exception ex) { MessageBox.Show("Errore Firewall Check:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Firewall Check:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenStunTester()
         {
             try { if (stunForm == null || stunForm.IsDisposed) stunForm = new StunTesterPanel();
                   try { stunForm.Icon = AppIcon.Shared; } catch { } stunForm.Show(this); stunForm.BringToFront(); }
-            catch (Exception ex) { MessageBox.Show("Errore STUN Tester:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "STUN Tester:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
 
         void OpenSerial()
@@ -1861,7 +1901,7 @@ namespace LosaTermVoip
                         try {
                             Process.Start(putty, "-serial " + d.SelectedCom + " -sercfg " + d.SelectedBaud + ",8,n,1,N");
                             Log("Seriale (finestra separata) → " + d.SelectedCom + " @ " + d.SelectedBaud);
-                        } catch (Exception ex) { MessageBox.Show("Errore avvio PuTTY:\n" + ex.Message, "Console Seriale"); }
+                        } catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "avvio PuTTY:\n" + ex.Message, "Console Seriale"); }
                     }
                     else OpenSerialTab(d.SelectedCom, d.SelectedBaud, putty);
                 }
@@ -2242,9 +2282,10 @@ namespace LosaTermVoip
             btnCopy.Click += (s, e) => { try { Clipboard.SetText(txt.Text); } catch { } };
             var btnRefresh = new Button { Text = L.B("🔄 Aggiorna","🔄 Refresh"), Dock = DockStyle.Right, Width = 105, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(60, 60, 80) };
             btnRefresh.FlatAppearance.BorderSize = 0;
-            btnRefresh.Click += (s, e) => txt.Text = GetNetInfoText();
+            btnRefresh.Click += (s, e) => { txt.Text = GetNetInfoText(); FetchPub(txt); };
             bottom.Controls.Add(btnCopy); bottom.Controls.Add(btnRefresh);
             f.Controls.Add(txt); f.Controls.Add(bottom);
+            FetchPub(txt);
             f.ShowDialog(this);
         }
 
@@ -2288,9 +2329,36 @@ namespace LosaTermVoip
             sb.AppendLine("  " + L.B("Default gateway","Default gateway").PadRight(15) + ": " + gw);
             sb.AppendLine("  " + "DNS".PadRight(15) + ": " + dns);
             sb.AppendLine("  " + "MAC".PadRight(15) + ": " + mac);
+            sb.AppendLine("  " + L.B("IP pubblico","Public IP").PadRight(15) + ": " + L.B("(ricerca…)","(looking up…)"));
             if (vip != null)
                 sb.AppendLine("  " + L.B("IP VPN","VPN IP").PadRight(15) + ": " + vip);
             return sb.ToString();
+        }
+
+        // Recupera l'IP pubblico (async) e aggiorna la riga nella finestra Info
+        void FetchPub(TextBox txt)
+        {
+            ThreadPool.QueueUserWorkItem(_ => {
+                string ip = FetchPublicIp();
+                if (txt.IsHandleCreated)
+                    txt.BeginInvoke((MethodInvoker)delegate {
+                        txt.Text = txt.Text.Replace(L.B("(ricerca…)","(looking up…)"), ip);
+                    });
+            });
+        }
+
+        static string FetchPublicIp()
+        {
+            try
+            {
+                using (var wc = new System.Net.WebClient())
+                {
+                    wc.Headers.Add("User-Agent", "LosaTermVoip");
+                    string s = wc.DownloadString("http://api.ipify.org").Trim();
+                    return (s.Length > 6 && s.Length < 46) ? s : L.B("non disponibile","unavailable");
+                }
+            }
+            catch { return L.B("non disponibile","unavailable"); }
         }
 
         static string FormatMac(System.Net.NetworkInformation.PhysicalAddress pa)

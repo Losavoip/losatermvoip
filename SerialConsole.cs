@@ -20,7 +20,7 @@ namespace LosaTermVoip
 
         public SerialConsolePanel()
         {
-            Text = "Console Seriale (PuTTY)";
+            Text = L.B("Console Seriale (PuTTY)","Serial Console (PuTTY)");
             Size = new Size(440, 250);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = MinimizeBox = false;
@@ -33,7 +33,7 @@ namespace LosaTermVoip
 
         void Build()
         {
-            Controls.Add(new Label { Text = "Porta COM:", Location = new Point(20, 26), AutoSize = true, ForeColor = Color.LightGray });
+            Controls.Add(new Label { Text = L.B("Porta COM:","COM port:"), Location = new Point(20, 26), AutoSize = true, ForeColor = Color.LightGray });
             cmbPort = new ComboBox { Location = new Point(120, 23), Width = 150, DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.FromArgb(45, 45, 60), ForeColor = Color.White };
             Controls.Add(cmbPort);
@@ -48,17 +48,17 @@ namespace LosaTermVoip
             cmbBaud.SelectedIndex = 0;   // Cisco console default
             Controls.Add(cmbBaud);
 
-            chkStandalone = new CheckBox { Text = "🪟 Finestra separata (più stabile)", Location = new Point(20, 92),
+            chkStandalone = new CheckBox { Text = L.B("🪟 Finestra separata (più stabile)","🪟 Separate window (more stable)"), Location = new Point(20, 92),
                 AutoSize = true, ForeColor = Color.LightGray, Checked = true };
-            new ToolTip().SetToolTip(chkStandalone, "Apre PuTTY come finestra a sé (consigliato per la seriale). Deseleziona per embeddarla in un tab.");
+            new ToolTip().SetToolTip(chkStandalone, L.B("Apre PuTTY come finestra a sé (consigliato per la seriale). Deseleziona per embeddarla in un tab.","Opens PuTTY as its own window (recommended for serial). Uncheck to embed it in a tab."));
             Controls.Add(chkStandalone);
 
-            var btnGo = MkBtn("▶ Apri console", 20, 126, 300, Color.FromArgb(30, 110, 30));
+            var btnGo = MkBtn(L.B("▶ Apri console","▶ Open console"), 20, 126, 300, Color.FromArgb(30, 110, 30));
             btnGo.Click += (s, e) => Launch();
             AcceptButton = btnGo;
             Controls.Add(btnGo);
 
-            Controls.Add(new Label { Text = "Console seriale via PuTTY — 8N1, niente flow control.",
+            Controls.Add(new Label { Text = L.B("Console seriale via PuTTY — 8N1, niente flow control.","Serial console via PuTTY — 8N1, no flow control."),
                 Location = new Point(20, 168), AutoSize = true, ForeColor = Color.Gray });
 
             RefreshPorts();
@@ -77,7 +77,7 @@ namespace LosaTermVoip
         {
             string com = cmbPort.SelectedItem as string;
             if (string.IsNullOrEmpty(com))
-            { MessageBox.Show("Nessuna porta COM trovata. Collega un adattatore USB-seriale e premi 🔄.", "Console Seriale"); return; }
+            { MessageBox.Show(L.B("Nessuna porta COM trovata. Collega un adattatore USB-seriale e premi 🔄.","No COM port found. Connect a USB-serial adapter and press 🔄."), L.B("Console Seriale","Serial Console")); return; }
             SelectedCom  = com;
             SelectedBaud = (cmbBaud.SelectedItem as string) ?? "9600";
             Standalone   = chkStandalone.Checked;

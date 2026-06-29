@@ -207,12 +207,30 @@
 
 <h3>🧮 Calcolatori VoIP</h3>
 <p>Tre calcolatori: <strong>banda per codec</strong> (G.711/729/Opus… + ptime + overhead L2 + VAD), <strong>budget MOS</strong> (E-model: delay/jitter/loss → R-factor e MOS) e riferimento <strong>QoS/DSCP</strong> (EF/CS3/AF31…).</p>
-<div class="warn-box"><em>Cattura LIVE</em> e <em>RTP Player</em> richiedono <strong>Wireshark/Npcap</strong>. Il <em>Generatore traffico</em> e gli strumenti che inviano SIP vanno usati <strong>solo su reti/sistemi di cui hai autorizzazione</strong>.</div>
+<h3>🗺️ Percorso di rete (LLDP/CDP)</h3>
+<p>Scopre <strong>su quale switch e porta sei</strong> ascoltando i frame <strong>LLDP/CDP</strong> (nome switch, porta, VLAN, IP mgmt, modello) e traccia i <strong>salti L3</strong> (gateway → core → firewall → uscita) col traceroute. Il quadro completo PC → switch → gateway → … → internet in un colpo. <em>(LLDP/CDP richiede Wireshark/Npcap.)</em></p>
+
+<h3>🧬 SIP Builder / Header tester</h3>
+<p>Form per costruire un messaggio SIP (metodo, From/To/Contact, <strong>header extra</strong> per la manipolazione, body/SDP) e inviarlo <strong>UDP/TCP/TLS</strong>; Via/Call-ID/branch automatici. Gestisce l'<strong>autenticazione Digest</strong> sui 401/407 (anche per l'INVITE) e mostra messaggio inviato + risposta.</p>
+
+<h3>🔐 SRTP / DTLS Analyzer</h3>
+<p>Incolla un SDP → analizza la sicurezza del media: <strong>SDES</strong> (a=crypto: suite, chiave), <strong>DTLS-SRTP</strong> (a=fingerprint, a=setup), con warning (SHA1_32, NULL cipher, RTP in chiaro).</p>
+
+<h3>🛠️ Provisioning Viewer</h3>
+<p>Apre un file di config telefono (Cisco/Yealink/Grandstream/Polycom: xml/cfg/json) ed evidenzia i <strong>parametri VoIP rilevanti</strong> (SIP server, utente, codec, NTP, VLAN…), con le <strong>password mascherate</strong>.</p>
+
+<h3>🌐 SIP over WebSocket (WebRTC)</h3>
+<p>Testa una connessione <strong>ws/wss</strong> a un SIP server WebSocket (subprotocollo <code>sip</code>, RFC 7118) e invia un OPTIONS — utile per WebRTC / softphone browser.</p>
+
+<h3>📄 Export report</h3>
+<p>Dal SIP Health Check puoi <strong>💾 salvare il report</strong> (.txt o .html) da allegare ai ticket.</p>
+
+<div class="warn-box"><em>Cattura LIVE</em>, <em>RTP Player</em> e <em>Percorso di rete</em> (LLDP/CDP) richiedono <strong>Wireshark/Npcap</strong>. Il <em>Generatore traffico</em> e gli strumenti che inviano SIP vanno usati <strong>solo su reti/sistemi di cui hai autorizzazione</strong>.</div>
 </section>
 
 <section>
 <h2>🌐 Lingua, layout, feedback</h2>
-<p>Interfaccia multilingua (IT/EN/FR/DE/ES): menu <strong>🌐 Language</strong> → scegli la lingua e riavvia per applicare. Posizione/dimensione finestra e ordine connessioni vengono salvati. Per feedback e donazioni usa il menu <strong>❓</strong> o il sito.</p>
+<p>Interfaccia bilingue (IT/EN, default Inglese): menu <strong>🌐 Language</strong> → scegli la lingua e riavvia per applicare. Posizione/dimensione finestra e ordine connessioni vengono salvati. Per feedback e donazioni usa il menu <strong>❓</strong> o il sito.</p>
 </section>
 
 <section>
@@ -377,12 +395,30 @@
 
 <h3>🧮 VoIP calculators</h3>
 <p>Three calculators: <strong>bandwidth per codec</strong> (G.711/729/Opus… + ptime + L2 overhead + VAD), <strong>MOS budget</strong> (E-model: delay/jitter/loss → R-factor and MOS) and a <strong>QoS/DSCP</strong> reference (EF/CS3/AF31…).</p>
-<div class="warn-box"><em>Live Capture</em> and <em>RTP Player</em> require <strong>Wireshark/Npcap</strong>. The <em>traffic generator</em> and the SIP-sending tools must be used <strong>only on networks/systems you are authorized to test</strong>.</div>
+<h3>🗺️ Network Path (LLDP/CDP)</h3>
+<p>Finds <strong>which switch and port you're on</strong> by listening for <strong>LLDP/CDP</strong> frames (switch name, port, VLAN, mgmt IP, model) and traces the <strong>L3 hops</strong> (gateway → core → firewall → edge) via traceroute. The full picture PC → switch → gateway → … → internet at once. <em>(LLDP/CDP requires Wireshark/Npcap.)</em></p>
+
+<h3>🧬 SIP Builder / Header tester</h3>
+<p>A form to build a SIP message (method, From/To/Contact, <strong>extra headers</strong> for manipulation, body/SDP) and send it <strong>UDP/TCP/TLS</strong>; Via/Call-ID/branch automatic. Handles <strong>Digest authentication</strong> on 401/407 (including for INVITE) and shows the sent message + response.</p>
+
+<h3>🔐 SRTP / DTLS Analyzer</h3>
+<p>Paste an SDP → analyze media security: <strong>SDES</strong> (a=crypto: suite, key), <strong>DTLS-SRTP</strong> (a=fingerprint, a=setup), with warnings (SHA1_32, NULL cipher, cleartext RTP).</p>
+
+<h3>🛠️ Provisioning Viewer</h3>
+<p>Opens a phone config file (Cisco/Yealink/Grandstream/Polycom: xml/cfg/json) and highlights the <strong>relevant VoIP parameters</strong> (SIP server, user, codecs, NTP, VLAN…), with <strong>passwords masked</strong>.</p>
+
+<h3>🌐 SIP over WebSocket (WebRTC)</h3>
+<p>Tests a <strong>ws/wss</strong> connection to a WebSocket SIP server (<code>sip</code> subprotocol, RFC 7118) and sends an OPTIONS — handy for WebRTC / browser softphones.</p>
+
+<h3>📄 Export report</h3>
+<p>From the SIP Health Check you can <strong>💾 save the report</strong> (.txt or .html) to attach to tickets.</p>
+
+<div class="warn-box"><em>Live Capture</em>, <em>RTP Player</em> and <em>Network Path</em> (LLDP/CDP) require <strong>Wireshark/Npcap</strong>. The <em>traffic generator</em> and the SIP-sending tools must be used <strong>only on networks/systems you are authorized to test</strong>.</div>
 </section>
 
 <section>
 <h2>🌐 Language, layout, feedback</h2>
-<p>Multilingual UI (IT/EN/FR/DE/ES): <strong>🌐 Language</strong> menu → pick a language and restart to apply. Window position/size and connection order are saved. For feedback and donations use the <strong>❓</strong> menu or the website.</p>
+<p>Bilingual UI (IT/EN, English default): <strong>🌐 Language</strong> menu → pick a language and restart to apply. Window position/size and connection order are saved. For feedback and donations use the <strong>❓</strong> menu or the website.</p>
 </section>
 
 <section>

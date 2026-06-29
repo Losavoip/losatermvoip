@@ -11,8 +11,7 @@ using System.Windows.Forms;
 namespace LosaTermVoip
 {
     // ════════════════════════════════════════════════════════════════════════
-    //  NET TOOLS — diagnostica di rete nativa: Ping, Traceroute, Port check,
-    //  scoperta MTU e controllo NTP. Tutto .NET, nessuna dipendenza.
+    //  NET TOOLS — Ping, Traceroute, Port check, MTU, NTP. Nativo, bilingue IT/EN.
     // ════════════════════════════════════════════════════════════════════════
     public class NetToolsPanel : Form
     {
@@ -38,7 +37,6 @@ namespace LosaTermVoip
             Controls.Add(tabs);
         }
 
-        // ───────────────────────── helper UI ─────────────────────────
         static Label Lbl(string t, int x, int y) { return new Label { Text = t, Location = new Point(x, y), AutoSize = true, ForeColor = Color.LightGray }; }
         static TextBox Txt(int x, int y, int w, string v) { return new TextBox { Location = new Point(x, y), Width = w, Text = v, BackColor = CInput, ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle }; }
         static Button Btn(string t, int x, int y, int w, Color c) { var b = new Button { Text = t, Location = new Point(x, y), Width = w, Height = 28, FlatStyle = FlatStyle.Flat, BackColor = c, ForeColor = Color.White, Font = new Font("Segoe UI", 9, FontStyle.Bold) }; b.FlatAppearance.BorderSize = 0; return b; }
@@ -51,6 +49,7 @@ namespace LosaTermVoip
         }
         void SetEnabled(Button b, bool en) { if (b.InvokeRequired) b.BeginInvoke((MethodInvoker)delegate { b.Enabled = en; }); else b.Enabled = en; }
         static Thread Bg(ThreadStart ts) { var t = new Thread(ts); t.IsBackground = true; t.Start(); return t; }
+        static string NoHost() { return L.B("Inserisci host.","Enter a host."); }
 
         // ════════════════════════ PING ════════════════════════
         TabPage BuildPingTab()
@@ -60,15 +59,15 @@ namespace LosaTermVoip
             top.Controls.Add(Lbl("Host / IP:", 10, 16));
             var txtHost = Txt(80, 13, 240, "");
             top.Controls.Add(txtHost);
-            top.Controls.Add(Lbl("N°:", 336, 16));
-            var txtN = Txt(366, 13, 50, "4");
+            top.Controls.Add(Lbl(L.B("N°:","Count:"), 336, 16));
+            var txtN = Txt(380, 13, 50, "4");
             top.Controls.Add(txtN);
-            var btn = Btn("▶ Ping", 430, 12, 100, Color.FromArgb(30, 110, 30));
+            var btn = Btn("▶ Ping", 444, 12, 100, Color.FromArgb(30, 110, 30));
             top.Controls.Add(btn);
             var outBox = OutBox();
 
             btn.Click += (s, e) => {
-                string host = txtHost.Text.Trim(); if (host.Length == 0) { MessageBox.Show("Inserisci host."); return; }
+                string host = txtHost.Text.Trim(); if (host.Length == 0) { MessageBox.Show(NoHost()); return; }
                 int n; if (!int.TryParse(txtN.Text.Trim(), out n) || n < 1) n = 4;
                 outBox.Clear(); btn.Enabled = false;
                 Bg(delegate { RunPing(host, n, outBox, btn); });
@@ -96,20 +95,20 @@ namespace LosaTermVoip
                             recv++; sum += r.RoundtripTime;
                             if (r.RoundtripTime < min) min = r.RoundtripTime;
                             if (r.RoundtripTime > max) max = r.RoundtripTime;
-                            Append(outBox, "  risposta da " + r.Address + " : tempo=" + r.RoundtripTime + " ms  TTL=" + r.Options.Ttl);
+                            Append(outBox, L.B("  risposta da ","  reply from ") + r.Address + " : " + L.B("tempo=","time=") + r.RoundtripTime + " ms  TTL=" + r.Options.Ttl);
                         }
                         else Append(outBox, "  " + r.Status);
                     }
-                    catch (Exception ex) { Append(outBox, "  errore: " + ex.Message); }
+                    catch (Exception ex) { Append(outBox, L.B("  errore: ","  error: ") + ex.Message); }
                     Thread.Sleep(500);
                 }
                 int loss = sent - recv;
                 Append(outBox, "──────────────────────────────");
-                Append(outBox, "inviati=" + sent + "  ricevuti=" + recv + "  persi=" + loss +
-                    "  (" + (sent > 0 ? (100 * loss / sent) : 0) + "% perdita)");
+                Append(outBox, L.B("inviati=","sent=") + sent + L.B("  ricevuti=","  received=") + recv + L.B("  persi=","  lost=") + loss +
+                    "  (" + (sent > 0 ? (100 * loss / sent) : 0) + L.B("% perdita)","% loss)"));
                 if (recv > 0) Append(outBox, "rtt  min=" + min + "  avg=" + (sum / recv) + "  max=" + max + " ms");
             }
-            catch (Exception ex) { Append(outBox, "Errore: " + ex.Message); }
+            catch (Exception ex) { Append(outBox, L.B("Errore: ","Error: ") + ex.Message); }
             SetEnabled(btn, true);
         }
 
@@ -121,11 +120,11 @@ namespace LosaTermVoip
             top.Controls.Add(Lbl("Host / IP:", 10, 16));
             var txtHost = Txt(80, 13, 240, "");
             top.Controls.Add(txtHost);
-            var btn = Btn("▶ Traccia", 336, 12, 110, Color.FromArgb(40, 80, 140));
+            var btn = Btn(L.B("▶ Traccia","▶ Trace"), 336, 12, 110, Color.FromArgb(40, 80, 140));
             top.Controls.Add(btn);
             var outBox = OutBox();
             btn.Click += (s, e) => {
-                string host = txtHost.Text.Trim(); if (host.Length == 0) { MessageBox.Show("Inserisci host."); return; }
+                string host = txtHost.Text.Trim(); if (host.Length == 0) { MessageBox.Show(NoHost()); return; }
                 outBox.Clear(); btn.Enabled = false;
                 Bg(delegate { RunTrace(host, outBox, btn); });
             };
@@ -137,7 +136,7 @@ namespace LosaTermVoip
         {
             try
             {
-                Append(outBox, "Traceroute verso " + host + "  (max 30 hop)");
+                Append(outBox, L.B("Traceroute verso ","Traceroute to ") + host + L.B("  (max 30 hop)","  (max 30 hops)"));
                 var p = new Ping();
                 byte[] buf = Encoding.ASCII.GetBytes(new string('a', 32));
                 for (int ttl = 1; ttl <= 30; ttl++)
@@ -153,12 +152,12 @@ namespace LosaTermVoip
                             Append(outBox, ttl.ToString().PadLeft(2) + "  " + addr.PadRight(18) + "  " + sw.ElapsedMilliseconds + " ms");
                         else
                             Append(outBox, ttl.ToString().PadLeft(2) + "  " + addr.PadRight(18) + "  " + r.Status);
-                        if (r.Status == IPStatus.Success) { Append(outBox, "── destinazione raggiunta ──"); break; }
+                        if (r.Status == IPStatus.Success) { Append(outBox, L.B("── destinazione raggiunta ──","── destination reached ──")); break; }
                     }
-                    catch (Exception ex) { Append(outBox, ttl.ToString().PadLeft(2) + "  errore: " + ex.Message); }
+                    catch (Exception ex) { Append(outBox, ttl.ToString().PadLeft(2) + L.B("  errore: ","  error: ") + ex.Message); }
                 }
             }
-            catch (Exception ex) { Append(outBox, "Errore: " + ex.Message); }
+            catch (Exception ex) { Append(outBox, L.B("Errore: ","Error: ") + ex.Message); }
             SetEnabled(btn, true);
         }
 
@@ -170,14 +169,14 @@ namespace LosaTermVoip
             top.Controls.Add(Lbl("Host / IP:", 10, 14));
             var txtHost = Txt(80, 11, 240, "");
             top.Controls.Add(txtHost);
-            var btn = Btn("▶ Verifica", 336, 10, 110, Color.FromArgb(90, 60, 140));
+            var btn = Btn(L.B("▶ Verifica","▶ Check"), 336, 10, 110, Color.FromArgb(90, 60, 140));
             top.Controls.Add(btn);
-            top.Controls.Add(Lbl("Porte (separate da spazio/virgola):", 10, 50));
-            var txtPorts = Txt(240, 47, 280, "5060 5061 2000 8443");
+            top.Controls.Add(Lbl(L.B("Porte (separate da spazio/virgola):","Ports (space/comma separated):"), 10, 50));
+            var txtPorts = Txt(270, 47, 250, "5060 5061 2000 8443");
             top.Controls.Add(txtPorts);
             var outBox = OutBox();
             btn.Click += (s, e) => {
-                string host = txtHost.Text.Trim(); if (host.Length == 0) { MessageBox.Show("Inserisci host."); return; }
+                string host = txtHost.Text.Trim(); if (host.Length == 0) { MessageBox.Show(NoHost()); return; }
                 string ports = txtPorts.Text;
                 outBox.Clear(); btn.Enabled = false;
                 Bg(delegate { RunPort(host, ports, outBox, btn); });
@@ -188,7 +187,7 @@ namespace LosaTermVoip
 
         void RunPort(string host, string portsStr, TextBox outBox, Button btn)
         {
-            Append(outBox, "Verifica porte TCP su " + host);
+            Append(outBox, L.B("Verifica porte TCP su ","TCP port check on ") + host);
             foreach (var tok in portsStr.Split(new[] { ' ', ',', ';', '\t' }, StringSplitOptions.RemoveEmptyEntries))
             {
                 int port;
@@ -204,9 +203,9 @@ namespace LosaTermVoip
                     }
                 }
                 catch (Exception ex) { err = ex.Message; }
-                Append(outBox, "  porta " + port.ToString().PadRight(6) + (open ? "✓ APERTA" : "✗ chiusa/filtrata" + (err.Length > 0 ? " (" + err + ")" : "")));
+                Append(outBox, L.B("  porta ","  port ") + port.ToString().PadRight(6) + (open ? L.B("✓ APERTA","✓ OPEN") : L.B("✗ chiusa/filtrata","✗ closed/filtered") + (err.Length > 0 ? " (" + err + ")" : "")));
             }
-            Append(outBox, "── fine ──");
+            Append(outBox, L.B("── fine ──","── end ──"));
             SetEnabled(btn, true);
         }
 
@@ -218,13 +217,13 @@ namespace LosaTermVoip
             top.Controls.Add(Lbl("Host / IP:", 10, 16));
             var txtHost = Txt(80, 13, 240, "");
             top.Controls.Add(txtHost);
-            var btn = Btn("▶ Scopri MTU", 336, 12, 130, Color.FromArgb(40, 110, 110));
+            var btn = Btn(L.B("▶ Scopri MTU","▶ Discover MTU"), 336, 12, 140, Color.FromArgb(40, 110, 110));
             top.Controls.Add(btn);
             var info = new Label { Dock = DockStyle.Bottom, Height = 22, ForeColor = Color.Gray, TextAlign = ContentAlignment.MiddleLeft,
-                Text = "  Ping con flag Don't-Fragment a dimensione crescente: trova la MTU massima del percorso (utile per audio monodirezionale/frammentazione)." };
+                Text = L.B("  Ping con flag Don't-Fragment a dimensione crescente: trova la MTU massima del percorso (utile per audio monodirezionale/frammentazione).","  Don't-Fragment ping at increasing size: finds the path's max MTU (useful for one-way audio/fragmentation).") };
             var outBox = OutBox();
             btn.Click += (s, e) => {
-                string host = txtHost.Text.Trim(); if (host.Length == 0) { MessageBox.Show("Inserisci host."); return; }
+                string host = txtHost.Text.Trim(); if (host.Length == 0) { MessageBox.Show(NoHost()); return; }
                 outBox.Clear(); btn.Enabled = false;
                 Bg(delegate { RunMtu(host, outBox, btn); });
             };
@@ -237,9 +236,9 @@ namespace LosaTermVoip
             try
             {
                 var p = new Ping();
-                var opt = new PingOptions(64, true); // DontFragment = true
-                Append(outBox, "Scoperta MTU verso " + host + " (DF, binary search)…");
-                int lo = 0, hi = 1472, best = 0; // payload ICMP; MTU = payload + 28
+                var opt = new PingOptions(64, true);
+                Append(outBox, L.B("Scoperta MTU verso ","MTU discovery to ") + host + " (DF, binary search)…");
+                int lo = 0, hi = 1472, best = 0;
                 while (lo <= hi)
                 {
                     int mid = (lo + hi) / 2;
@@ -250,10 +249,10 @@ namespace LosaTermVoip
                     if (ok) { best = mid; lo = mid + 1; }
                     else hi = mid - 1;
                 }
-                if (best > 0) Append(outBox, "MTU del percorso ≈ " + (best + 28) + " byte  (payload max " + best + ")");
-                else Append(outBox, "Nessuna risposta DF: l'host non risponde al ping o blocca ICMP.");
+                if (best > 0) Append(outBox, L.B("MTU del percorso ≈ ","Path MTU ≈ ") + (best + 28) + L.B(" byte  (payload max "," bytes  (max payload ") + best + ")");
+                else Append(outBox, L.B("Nessuna risposta DF: l'host non risponde al ping o blocca ICMP.","No DF reply: the host doesn't answer ping or blocks ICMP."));
             }
-            catch (Exception ex) { Append(outBox, "Errore: " + ex.Message); }
+            catch (Exception ex) { Append(outBox, L.B("Errore: ","Error: ") + ex.Message); }
             SetEnabled(btn, true);
         }
 
@@ -262,16 +261,16 @@ namespace LosaTermVoip
         {
             var tab = new TabPage("  NTP  ") { BackColor = CBg, ForeColor = Color.White };
             var top = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = CBar };
-            top.Controls.Add(Lbl("Server NTP:", 10, 16));
+            top.Controls.Add(Lbl(L.B("Server NTP:","NTP server:"), 10, 16));
             var txtHost = Txt(90, 13, 240, "pool.ntp.org");
             top.Controls.Add(txtHost);
-            var btn = Btn("▶ Interroga", 346, 12, 120, Color.FromArgb(110, 80, 30));
+            var btn = Btn(L.B("▶ Interroga","▶ Query"), 346, 12, 120, Color.FromArgb(110, 80, 30));
             top.Controls.Add(btn);
             var info = new Label { Dock = DockStyle.Bottom, Height = 22, ForeColor = Color.Gray, TextAlign = ContentAlignment.MiddleLeft,
-                Text = "  Un orologio sfasato rompe TLS/SRTP e disallinea i CDR. Confronta l'ora del server con quella del PC." };
+                Text = L.B("  Un orologio sfasato rompe TLS/SRTP e disallinea i CDR. Confronta l'ora del server con quella del PC.","  A skewed clock breaks TLS/SRTP and misaligns CDRs. Compare the server time with the PC's.") };
             var outBox = OutBox();
             btn.Click += (s, e) => {
-                string host = txtHost.Text.Trim(); if (host.Length == 0) { MessageBox.Show("Inserisci server NTP."); return; }
+                string host = txtHost.Text.Trim(); if (host.Length == 0) { MessageBox.Show(L.B("Inserisci server NTP.","Enter an NTP server.")); return; }
                 outBox.Clear(); btn.Enabled = false;
                 Bg(delegate { RunNtp(host, outBox, btn); });
             };
@@ -284,7 +283,7 @@ namespace LosaTermVoip
             try
             {
                 var data = new byte[48];
-                data[0] = 0x1B; // LI=0, VN=3, Mode=3 (client)
+                data[0] = 0x1B;
                 using (var u = new UdpClient())
                 {
                     u.Client.ReceiveTimeout = 3000;
@@ -303,15 +302,15 @@ namespace LosaTermVoip
                     DateTime serverUtc = epoch1900.AddMilliseconds(ms);
                     double offsetMs = (serverUtc - DateTime.UtcNow).TotalMilliseconds + sw.ElapsedMilliseconds / 2.0;
 
-                    Append(outBox, "Server NTP : " + host);
+                    Append(outBox, L.B("Server NTP : ","NTP server : ") + host);
                     Append(outBox, "Stratum    : " + stratum);
-                    Append(outBox, "Ora server : " + serverUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff") + " (locale)");
-                    Append(outBox, "Ora PC     : " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                    Append(outBox, L.B("Ora server : ","Server time: ") + serverUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff") + L.B(" (locale)"," (local)"));
+                    Append(outBox, L.B("Ora PC     : ","PC time    : ") + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"));
                     Append(outBox, "Offset     : " + offsetMs.ToString("F0") + " ms" +
-                        (Math.Abs(offsetMs) > 1000 ? "   ⚠ orologio sfasato!" : "   ✓ ok"));
+                        (Math.Abs(offsetMs) > 1000 ? L.B("   ⚠ orologio sfasato!","   ⚠ clock skewed!") : "   ✓ ok"));
                 }
             }
-            catch (Exception ex) { Append(outBox, "✗ Errore NTP: " + ex.Message + "\r\n(verifica raggiungibilità UDP/123)"); }
+            catch (Exception ex) { Append(outBox, L.B("✗ Errore NTP: ","✗ NTP error: ") + ex.Message + L.B("\r\n(verifica raggiungibilità UDP/123)","\r\n(check UDP/123 reachability)")); }
             SetEnabled(btn, true);
         }
     }
