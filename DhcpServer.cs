@@ -49,7 +49,7 @@ namespace LosaTermVoip
             running = true;
             listenThread = new Thread(Loop) { IsBackground = true };
             listenThread.Start();
-            Log("▶ DHCP LAB attivo — server " + localIp + " (UDP/67). Pool " + poolStartStr + " ÷ " + poolEndStr +
+            Log(L.B("▶ DHCP LAB attivo — server ","▶ DHCP LAB active — server ") + localIp + " (UDP/67). Pool " + poolStartStr + " ÷ " + poolEndStr +
                 (tftp != null ? "  opt150=" + tftp : ""));
         }
 
@@ -58,7 +58,7 @@ namespace LosaTermVoip
             running = false;
             try { if (sock != null) sock.Close(); } catch { }
             sock = null;
-            Log("⏹ DHCP fermato.");
+            Log(L.B("⏹ DHCP fermato.","⏹ DHCP stopped."));
         }
 
         void Loop()
@@ -154,7 +154,7 @@ namespace LosaTermVoip
 
                 sock.Send(r, o, new IPEndPoint(IPAddress.Broadcast, 68));
             }
-            catch (Exception ex) { Log("✗ errore invio reply: " + ex.Message); }
+            catch (Exception ex) { Log(L.B("✗ errore invio reply: ","✗ reply send error: ") + ex.Message); }
         }
 
         static uint ToUint(IPAddress ip) { byte[] b = ip.GetAddressBytes(); return ((uint)b[0] << 24) | ((uint)b[1] << 16) | ((uint)b[2] << 8) | b[3]; }

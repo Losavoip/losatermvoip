@@ -52,123 +52,123 @@ namespace LosaTermVoip
             if (cube)
             {
                 // ── SIP responses ───────────────────────────────────────────
-                r.Add(new AnalyzerRule("SIP 408 Timeout",         @"408 Request Timeout",              Severity.Error,    "Timeout SIP: destinatario non risponde. Verificare connettività IP, firewall, e stato trunk.", "CUBE"));
-                r.Add(new AnalyzerRule("SIP 403 Forbidden",       @"403 Forbidden",                    Severity.Error,    "Chiamata rifiutata (403). Trunk non autorizzato, ACL SIP, o IP non nella whitelist CUCM.", "CUBE"));
-                r.Add(new AnalyzerRule("SIP 404 Not Found",       @"404 Not Found",                    Severity.Error,    "Numero non trovato (404). Verificare dial-plan, translation pattern e route pattern.", "CUBE"));
-                r.Add(new AnalyzerRule("SIP 480 Unavailable",     @"480 Temporarily Unavailable",      Severity.Warning,  "Endpoint temporaneamente non disponibile. Probabile nessun agente/device registrato.", "CUBE"));
-                r.Add(new AnalyzerRule("SIP 486 Busy",            @"486 Busy Here",                    Severity.Warning,  "Utente occupato (486 Busy Here).", "CUBE"));
-                r.Add(new AnalyzerRule("SIP 487 Cancelled",       @"487 Request Terminated",           Severity.Info,     "Chiamata cancellata prima della risposta (487).", "CUBE"));
-                r.Add(new AnalyzerRule("SIP 488 Not Acceptable",  @"488 Not Acceptable",               Severity.Error,    "Codec non accettabile (488). Mismatch SDP/codec tra CUBE e CUCM.", "CUBE"));
-                r.Add(new AnalyzerRule("SIP 500 Server Error",    @"500 Internal Server Error",        Severity.Error,    "Errore interno server SIP (500). Verificare log CUCM o gateway.", "CUBE"));
-                r.Add(new AnalyzerRule("SIP 503 Unavailable",     @"503 Service Unavailable",          Severity.Error,    "Servizio non disponibile (503). CUCM o trunk giù. Verificare servizi.", "CUBE"));
+                r.Add(new AnalyzerRule("SIP 408 Timeout",         @"408 Request Timeout",              Severity.Error,    L.B("Timeout SIP: destinatario non risponde. Verificare connettività IP, firewall, e stato trunk.","SIP timeout: the peer isn't responding. Check IP connectivity, firewall, and trunk status."), "CUBE"));
+                r.Add(new AnalyzerRule("SIP 403 Forbidden",       @"403 Forbidden",                    Severity.Error,    L.B("Chiamata rifiutata (403). Trunk non autorizzato, ACL SIP, o IP non nella whitelist CUCM.","Call rejected (403). Unauthorized trunk, SIP ACL, or IP not in the CUCM whitelist."), "CUBE"));
+                r.Add(new AnalyzerRule("SIP 404 Not Found",       @"404 Not Found",                    Severity.Error,    L.B("Numero non trovato (404). Verificare dial-plan, translation pattern e route pattern.","Number not found (404). Check dial-plan, translation pattern and route pattern."), "CUBE"));
+                r.Add(new AnalyzerRule("SIP 480 Unavailable",     @"480 Temporarily Unavailable",      Severity.Warning,  L.B("Endpoint temporaneamente non disponibile. Probabile nessun agente/device registrato.","Endpoint temporarily unavailable. Likely no agent/device registered."), "CUBE"));
+                r.Add(new AnalyzerRule("SIP 486 Busy",            @"486 Busy Here",                    Severity.Warning,  L.B("Utente occupato (486 Busy Here).","User busy (486 Busy Here)."), "CUBE"));
+                r.Add(new AnalyzerRule("SIP 487 Cancelled",       @"487 Request Terminated",           Severity.Info,     L.B("Chiamata cancellata prima della risposta (487).","Call cancelled before the answer (487)."), "CUBE"));
+                r.Add(new AnalyzerRule("SIP 488 Not Acceptable",  @"488 Not Acceptable",               Severity.Error,    L.B("Codec non accettabile (488). Mismatch SDP/codec tra CUBE e CUCM.","Codec not acceptable (488). SDP/codec mismatch between CUBE and CUCM."), "CUBE"));
+                r.Add(new AnalyzerRule("SIP 500 Server Error",    @"500 Internal Server Error",        Severity.Error,    L.B("Errore interno server SIP (500). Verificare log CUCM o gateway.","SIP server internal error (500). Check CUCM or gateway logs."), "CUBE"));
+                r.Add(new AnalyzerRule("SIP 503 Unavailable",     @"503 Service Unavailable",          Severity.Error,    L.B("Servizio non disponibile (503). CUCM o trunk giù. Verificare servizi.","Service unavailable (503). CUCM or trunk down. Check services."), "CUBE"));
 
                 // ── Q.850 Cause Codes ────────────────────────────────────────
-                r.Add(new AnalyzerRule("Q.850 #1  Numero inesistente",  @"[Cc]ause\s*[=:]\s*1\b",  Severity.Error,   "Q.850 Cause 1: Numero non assegnato/inesistente. Verificare destination-pattern e dial-plan.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #16 Chiamata OK",         @"[Cc]ause\s*[=:]\s*16\b", Severity.Info,    "Q.850 Cause 16: Normal call clearing. Terminazione normale.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #17 Occupato",            @"[Cc]ause\s*[=:]\s*17\b", Severity.Warning, "Q.850 Cause 17: User busy. L'utente è occupato.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #18 Nessuna risposta",    @"[Cc]ause\s*[=:]\s*18\b", Severity.Warning, "Q.850 Cause 18: No user responding. Ring timeout.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #19 Nessuna risposta",    @"[Cc]ause\s*[=:]\s*19\b", Severity.Warning, "Q.850 Cause 19: No answer from user on time.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #21 Chiamata rifiutata",  @"[Cc]ause\s*[=:]\s*21\b", Severity.Error,   "Q.850 Cause 21: Call rejected. Destinazione rifiuta esplicitamente.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #27 Destinaz. fuori svc", @"[Cc]ause\s*[=:]\s*27\b", Severity.Error,   "Q.850 Cause 27: Destination out of order. Device non raggiungibile.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #28 Formato num. errato", @"[Cc]ause\s*[=:]\s*28\b", Severity.Error,   "Q.850 Cause 28: Invalid number format. Verificare E.164 e prefissi.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #34 No circuito",         @"[Cc]ause\s*[=:]\s*34\b", Severity.Error,   "Q.850 Cause 34: No circuit available. Trunk saturo o linee PRI/BRI esaurite.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #38 Rete fuori svc",      @"[Cc]ause\s*[=:]\s*38\b", Severity.Error,   "Q.850 Cause 38: Network out of order. Problema rete/carrier.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #41 Guasto temporaneo",   @"[Cc]ause\s*[=:]\s*41\b", Severity.Warning, "Q.850 Cause 41: Temporary failure. Guasto temporaneo, ritentare.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #47 Risorse esaurite",    @"[Cc]ause\s*[=:]\s*47\b", Severity.Error,   "Q.850 Cause 47: Resource unavailable. DSP/canali media esauriti.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #65 Bearer non support.", @"[Cc]ause\s*[=:]\s*65\b", Severity.Error,   "Q.850 Cause 65: Bearer capability not implemented. Tipo chiamata non supportato.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #88 Incompatibile",       @"[Cc]ause\s*[=:]\s*88\b", Severity.Error,   "Q.850 Cause 88: Incompatible destination. Codec/bearer incompatibili.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #102 Timer scaduto",      @"[Cc]ause\s*[=:]\s*102\b",Severity.Warning, "Q.850 Cause 102: Recovery on timer expiry. Loop SIP o ritardo eccessivo.", "CUBE"));
-                r.Add(new AnalyzerRule("Q.850 #111 Errore protocollo",  @"[Cc]ause\s*[=:]\s*111\b",Severity.Error,   "Q.850 Cause 111: Protocol error. Messaggio SIP/Q.931 malformato.", "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #1  " + L.B("Numero inesistente","Unallocated number"),  @"[Cc]ause\s*[=:]\s*1\b",  Severity.Error,   L.B("Q.850 Cause 1: Numero non assegnato/inesistente. Verificare destination-pattern e dial-plan.","Q.850 Cause 1: Unallocated/non-existent number. Check destination-pattern and dial-plan."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #16 " + L.B("Chiamata OK","Call OK"),         @"[Cc]ause\s*[=:]\s*16\b", Severity.Info,    L.B("Q.850 Cause 16: Normal call clearing. Terminazione normale.","Q.850 Cause 16: Normal call clearing."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #17 " + L.B("Occupato","Busy"),            @"[Cc]ause\s*[=:]\s*17\b", Severity.Warning, L.B("Q.850 Cause 17: User busy. L'utente è occupato.","Q.850 Cause 17: User busy."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #18 " + L.B("Nessuna risposta","No answer"),    @"[Cc]ause\s*[=:]\s*18\b", Severity.Warning, "Q.850 Cause 18: No user responding. Ring timeout.", "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #19 " + L.B("Nessuna risposta","No answer"),    @"[Cc]ause\s*[=:]\s*19\b", Severity.Warning, "Q.850 Cause 19: No answer from user on time.", "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #21 " + L.B("Chiamata rifiutata","Call rejected"),  @"[Cc]ause\s*[=:]\s*21\b", Severity.Error,   L.B("Q.850 Cause 21: Call rejected. Destinazione rifiuta esplicitamente.","Q.850 Cause 21: Call rejected. The destination explicitly rejects it."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #27 " + L.B("Destinaz. fuori svc","Dest. out of order"), @"[Cc]ause\s*[=:]\s*27\b", Severity.Error,   L.B("Q.850 Cause 27: Destination out of order. Device non raggiungibile.","Q.850 Cause 27: Destination out of order. Device unreachable."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #28 " + L.B("Formato num. errato","Invalid num. format"), @"[Cc]ause\s*[=:]\s*28\b", Severity.Error,   L.B("Q.850 Cause 28: Invalid number format. Verificare E.164 e prefissi.","Q.850 Cause 28: Invalid number format. Check E.164 and prefixes."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #34 " + L.B("No circuito","No circuit"),         @"[Cc]ause\s*[=:]\s*34\b", Severity.Error,   L.B("Q.850 Cause 34: No circuit available. Trunk saturo o linee PRI/BRI esaurite.","Q.850 Cause 34: No circuit available. Trunk saturated or PRI/BRI lines exhausted."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #38 " + L.B("Rete fuori svc","Network out of order"),      @"[Cc]ause\s*[=:]\s*38\b", Severity.Error,   L.B("Q.850 Cause 38: Network out of order. Problema rete/carrier.","Q.850 Cause 38: Network out of order. Network/carrier problem."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #41 " + L.B("Guasto temporaneo","Temporary failure"),   @"[Cc]ause\s*[=:]\s*41\b", Severity.Warning, L.B("Q.850 Cause 41: Temporary failure. Guasto temporaneo, ritentare.","Q.850 Cause 41: Temporary failure. Retry."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #47 " + L.B("Risorse esaurite","Resources exhausted"),    @"[Cc]ause\s*[=:]\s*47\b", Severity.Error,   L.B("Q.850 Cause 47: Resource unavailable. DSP/canali media esauriti.","Q.850 Cause 47: Resource unavailable. DSP/media channels exhausted."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #65 " + L.B("Bearer non support.","Bearer not implemented"), @"[Cc]ause\s*[=:]\s*65\b", Severity.Error,   L.B("Q.850 Cause 65: Bearer capability not implemented. Tipo chiamata non supportato.","Q.850 Cause 65: Bearer capability not implemented. Call type not supported."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #88 " + L.B("Incompatibile","Incompatible"),       @"[Cc]ause\s*[=:]\s*88\b", Severity.Error,   L.B("Q.850 Cause 88: Incompatible destination. Codec/bearer incompatibili.","Q.850 Cause 88: Incompatible destination. Incompatible codec/bearer."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #102 " + L.B("Timer scaduto","Timer expired"),      @"[Cc]ause\s*[=:]\s*102\b",Severity.Warning, L.B("Q.850 Cause 102: Recovery on timer expiry. Loop SIP o ritardo eccessivo.","Q.850 Cause 102: Recovery on timer expiry. SIP loop or excessive delay."), "CUBE"));
+                r.Add(new AnalyzerRule("Q.850 #111 " + L.B("Errore protocollo","Protocol error"),  @"[Cc]ause\s*[=:]\s*111\b",Severity.Error,   L.B("Q.850 Cause 111: Protocol error. Messaggio SIP/Q.931 malformato.","Q.850 Cause 111: Protocol error. Malformed SIP/Q.931 message."), "CUBE"));
 
                 // ── CCSIP / IOS VoIP ─────────────────────────────────────────
-                r.Add(new AnalyzerRule("CCSIP Error",          @"%CCSIP-\d-\w+",                     Severity.Error,   "Errore CCSIP IOS. Controllare tipo e causa dell'errore.", "CUBE"));
-                r.Add(new AnalyzerRule("Voice IEC Error",      @"%VOICE_IEC-\d",                     Severity.Warning, "Internal Error Code VoIP. Verificare causa nel log.", "CUBE"));
-                r.Add(new AnalyzerRule("No Dial-Peer",         @"[Nn]o dial.peer|dial.peer not found", Severity.Error, "Nessun dial-peer match. Verificare destination-pattern e incoming chiamante.", "CUBE"));
-                r.Add(new AnalyzerRule("Codec Mismatch",       @"[Nn]o common codec|codec.*mismatch|[Ii]ncompatible codec", Severity.Error, "Nessun codec in comune. Allineare codec list in dial-peer e CUCM region.", "CUBE"));
-                r.Add(new AnalyzerRule("RTP Error",            @"[Rr][Tt][Pp].*(error|fail|timeout)", Severity.Error,  "Errore sessione RTP. Possibile problema audio/one-way. Verificare NAT e ACL.", "CUBE"));
-                r.Add(new AnalyzerRule("DTMF Issue",           @"[Dd][Tt][Mm][Ff].*(fail|error|mismatch)|kpml.*error", Severity.Warning, "Problema DTMF. Verificare modalità (rfc2833/inband/kpml) tra i due leg.", "CUBE"));
-                r.Add(new AnalyzerRule("TLS/SSL Error",        @"[Tt][Ll][Ss].*(error|fail)|[Ss][Ss][Ll].*(error|fail)|certificate.*invalid", Severity.Error, "Errore TLS/SSL. Verificare certificati, truststore e configurazione TLS.", "CUBE"));
-                r.Add(new AnalyzerRule("Early Media Problem",  @"early.media.*(fail|error)|[Rr][Bb][Pp].*(error|fail)", Severity.Warning, "Problema early media. Possibile audio one-way in fase di ring.", "CUBE"));
-                r.Add(new AnalyzerRule("T38 Fax Error",        @"[Tt]38.*(fail|error|reject)|fax.*(fail|error)", Severity.Warning, "Problema fax T.38. Verificare configurazione fax su dial-peer.", "CUBE"));
-                r.Add(new AnalyzerRule("SRTP Error",           @"[Ss][Rr][Tt][Pp].*(error|fail)|[Cc]rypto.*mismatch", Severity.Error, "Errore SRTP/crypto. Verificare policy media encryption su CUCM e CUBE.", "CUBE"));
+                r.Add(new AnalyzerRule("CCSIP Error",          @"%CCSIP-\d-\w+",                     Severity.Error,   L.B("Errore CCSIP IOS. Controllare tipo e causa dell'errore.","IOS CCSIP error. Check the error type and cause."), "CUBE"));
+                r.Add(new AnalyzerRule("Voice IEC Error",      @"%VOICE_IEC-\d",                     Severity.Warning, L.B("Internal Error Code VoIP. Verificare causa nel log.","VoIP Internal Error Code. Check the cause in the log."), "CUBE"));
+                r.Add(new AnalyzerRule("No Dial-Peer",         @"[Nn]o dial.peer|dial.peer not found", Severity.Error, L.B("Nessun dial-peer match. Verificare destination-pattern e incoming chiamante.","No dial-peer match. Check destination-pattern and incoming caller."), "CUBE"));
+                r.Add(new AnalyzerRule("Codec Mismatch",       @"[Nn]o common codec|codec.*mismatch|[Ii]ncompatible codec", Severity.Error, L.B("Nessun codec in comune. Allineare codec list in dial-peer e CUCM region.","No common codec. Align the codec list in dial-peer and CUCM region."), "CUBE"));
+                r.Add(new AnalyzerRule("RTP Error",            @"[Rr][Tt][Pp].*(error|fail|timeout)", Severity.Error,  L.B("Errore sessione RTP. Possibile problema audio/one-way. Verificare NAT e ACL.","RTP session error. Possible audio/one-way issue. Check NAT and ACL."), "CUBE"));
+                r.Add(new AnalyzerRule("DTMF Issue",           @"[Dd][Tt][Mm][Ff].*(fail|error|mismatch)|kpml.*error", Severity.Warning, L.B("Problema DTMF. Verificare modalità (rfc2833/inband/kpml) tra i due leg.","DTMF problem. Check the mode (rfc2833/inband/kpml) between the two legs."), "CUBE"));
+                r.Add(new AnalyzerRule("TLS/SSL Error",        @"[Tt][Ll][Ss].*(error|fail)|[Ss][Ss][Ll].*(error|fail)|certificate.*invalid", Severity.Error, L.B("Errore TLS/SSL. Verificare certificati, truststore e configurazione TLS.","TLS/SSL error. Check certificates, truststore and TLS configuration."), "CUBE"));
+                r.Add(new AnalyzerRule("Early Media Problem",  @"early.media.*(fail|error)|[Rr][Bb][Pp].*(error|fail)", Severity.Warning, L.B("Problema early media. Possibile audio one-way in fase di ring.","Early media problem. Possible one-way audio during ringing."), "CUBE"));
+                r.Add(new AnalyzerRule("T38 Fax Error",        @"[Tt]38.*(fail|error|reject)|fax.*(fail|error)", Severity.Warning, L.B("Problema fax T.38. Verificare configurazione fax su dial-peer.","T.38 fax problem. Check fax configuration on the dial-peer."), "CUBE"));
+                r.Add(new AnalyzerRule("SRTP Error",           @"[Ss][Rr][Tt][Pp].*(error|fail)|[Cc]rypto.*mismatch", Severity.Error, L.B("Errore SRTP/crypto. Verificare policy media encryption su CUCM e CUBE.","SRTP/crypto error. Check media encryption policy on CUCM and CUBE."), "CUBE"));
 
                 // ── Call Flow ────────────────────────────────────────────────
-                r.Add(new AnalyzerRule("INVITE entrante",   @"^INVITE sip:",                          Severity.Info, "Chiamata SIP entrante.", "CUBE"));
-                r.Add(new AnalyzerRule("INVITE uscente",    @"Sending:\s*\r?\nINVITE sip:",            Severity.Info, "Chiamata SIP uscente.", "CUBE"));
-                r.Add(new AnalyzerRule("200 OK",            @"SIP/2\.0 200 OK",                       Severity.Info, "Chiamata stabilita (200 OK).", "CUBE"));
-                r.Add(new AnalyzerRule("BYE",               @"^BYE sip:|Sending.*\nBYE sip:",         Severity.Info, "Terminazione chiamata (BYE).", "CUBE"));
-                r.Add(new AnalyzerRule("CANCEL",            @"^CANCEL sip:",                          Severity.Warning, "Chiamata annullata (CANCEL).", "CUBE"));
+                r.Add(new AnalyzerRule(L.B("INVITE entrante","INVITE incoming"),   @"^INVITE sip:",                          Severity.Info, L.B("Chiamata SIP entrante.","Incoming SIP call."), "CUBE"));
+                r.Add(new AnalyzerRule(L.B("INVITE uscente","INVITE outgoing"),    @"Sending:\s*\r?\nINVITE sip:",            Severity.Info, L.B("Chiamata SIP uscente.","Outgoing SIP call."), "CUBE"));
+                r.Add(new AnalyzerRule("200 OK",            @"SIP/2\.0 200 OK",                       Severity.Info, L.B("Chiamata stabilita (200 OK).","Call established (200 OK)."), "CUBE"));
+                r.Add(new AnalyzerRule("BYE",               @"^BYE sip:|Sending.*\nBYE sip:",         Severity.Info, L.B("Terminazione chiamata (BYE).","Call termination (BYE)."), "CUBE"));
+                r.Add(new AnalyzerRule("CANCEL",            @"^CANCEL sip:",                          Severity.Warning, L.B("Chiamata annullata (CANCEL).","Call cancelled (CANCEL)."), "CUBE"));
             }
 
             if (cucm)
             {
-                r.Add(new AnalyzerRule("DB Error",             @"[Dd][Bb][_\s][Ee]rror|[Dd]atabase.*[Ff]ail", Severity.Error,   "Errore database CUCM. Verificare stato Publisher DB e replication.", "CUCM"));
-                r.Add(new AnalyzerRule("Registrazione fallita",@"[Rr]egist.*[Ff]ail|REGISTER.*40[13]|[Rr]egist.*[Rr]eject", Severity.Error, "Registrazione endpoint fallita. Verificare credenziali, pool sicurezza, partition.", "CUCM"));
-                r.Add(new AnalyzerRule("CTI/JTAPI Error",      @"CTI.*[Ee]rror|JTAPI.*[Ff]ail",       Severity.Error,   "Errore CTI/JTAPI. Verificare connessione applicazioni CTI e licenze.", "CUCM"));
-                r.Add(new AnalyzerRule("Media Resource",       @"[Mm]edia [Rr]esource.*[Uu]navail|MTP.*fail|[Tt]ranscoder.*fail", Severity.Error, "Risorsa media non disponibile. Verificare MTP/Transcoder e MRGL.", "CUCM"));
-                r.Add(new AnalyzerRule("Certificato",          @"[Cc]ertif.*[Ee]xpir|ITLFile.*error|[Tt]omcat.*cert.*fail", Severity.Error, "Problema certificato CUCM. Verificare scadenza, ITL e rigenerazione cert.", "CUCM"));
-                r.Add(new AnalyzerRule("Extension Mobility",   @"EM.*[Ff]ail|[Ee]xtension [Mm]obility.*error", Severity.Warning, "Problema Extension Mobility. Verificare servizio EM e profilo device.", "CUCM"));
-                r.Add(new AnalyzerRule("Trunk SIP Down",       @"[Ss][Ii][Pp].*[Tt]runk.*[Uu]nreg|[Tt]runk.*[Oo]ffline", Severity.Error, "Trunk SIP CUCM non registrato. Verificare configurazione e raggiungibilità CUBE.", "CUCM"));
-                r.Add(new AnalyzerRule("Route Plan Error",     @"[Rr]oute [Pp]lan.*[Ff]ail|[Nn]o [Rr]oute [Pp]attern", Severity.Error, "Route pattern non trovato. Verificare dial plan e partition/CSS.", "CUCM"));
-                r.Add(new AnalyzerRule("Service Failure",      @"[Ss]ervice.*[Ff]ailed|[Cc]all[Mm]anager.*[Ss]top", Severity.Critical, "Servizio CUCM in stato Failed o stoppato.", "CUCM"));
+                r.Add(new AnalyzerRule("DB Error",             @"[Dd][Bb][_\s][Ee]rror|[Dd]atabase.*[Ff]ail", Severity.Error,   L.B("Errore database CUCM. Verificare stato Publisher DB e replication.","CUCM database error. Check Publisher DB status and replication."), "CUCM"));
+                r.Add(new AnalyzerRule(L.B("Registrazione fallita","Registration failed"),@"[Rr]egist.*[Ff]ail|REGISTER.*40[13]|[Rr]egist.*[Rr]eject", Severity.Error, L.B("Registrazione endpoint fallita. Verificare credenziali, pool sicurezza, partition.","Endpoint registration failed. Check credentials, security profile, partition."), "CUCM"));
+                r.Add(new AnalyzerRule("CTI/JTAPI Error",      @"CTI.*[Ee]rror|JTAPI.*[Ff]ail",       Severity.Error,   L.B("Errore CTI/JTAPI. Verificare connessione applicazioni CTI e licenze.","CTI/JTAPI error. Check CTI application connectivity and licenses."), "CUCM"));
+                r.Add(new AnalyzerRule("Media Resource",       @"[Mm]edia [Rr]esource.*[Uu]navail|MTP.*fail|[Tt]ranscoder.*fail", Severity.Error, L.B("Risorsa media non disponibile. Verificare MTP/Transcoder e MRGL.","Media resource unavailable. Check MTP/Transcoder and MRGL."), "CUCM"));
+                r.Add(new AnalyzerRule(L.B("Certificato","Certificate"),          @"[Cc]ertif.*[Ee]xpir|ITLFile.*error|[Tt]omcat.*cert.*fail", Severity.Error, L.B("Problema certificato CUCM. Verificare scadenza, ITL e rigenerazione cert.","CUCM certificate problem. Check expiry, ITL and cert regeneration."), "CUCM"));
+                r.Add(new AnalyzerRule("Extension Mobility",   @"EM.*[Ff]ail|[Ee]xtension [Mm]obility.*error", Severity.Warning, L.B("Problema Extension Mobility. Verificare servizio EM e profilo device.","Extension Mobility problem. Check the EM service and device profile."), "CUCM"));
+                r.Add(new AnalyzerRule("Trunk SIP Down",       @"[Ss][Ii][Pp].*[Tt]runk.*[Uu]nreg|[Tt]runk.*[Oo]ffline", Severity.Error, L.B("Trunk SIP CUCM non registrato. Verificare configurazione e raggiungibilità CUBE.","CUCM SIP trunk not registered. Check configuration and CUBE reachability."), "CUCM"));
+                r.Add(new AnalyzerRule("Route Plan Error",     @"[Rr]oute [Pp]lan.*[Ff]ail|[Nn]o [Rr]oute [Pp]attern", Severity.Error, L.B("Route pattern non trovato. Verificare dial plan e partition/CSS.","Route pattern not found. Check dial plan and partition/CSS."), "CUCM"));
+                r.Add(new AnalyzerRule("Service Failure",      @"[Ss]ervice.*[Ff]ailed|[Cc]all[Mm]anager.*[Ss]top", Severity.Critical, L.B("Servizio CUCM in stato Failed o stoppato.","CUCM service in Failed or stopped state."), "CUCM"));
             }
 
             // ── H.323 (sempre incluse) ────────────────────────────────────────────
-            r.Add(new AnalyzerRule("H.323 Setup",           @"\bSetup\b.*(?:H\.225|H323|h225)",                   Severity.Info,    "Chiamata H.323 in ingresso/uscita (Setup).", "All"));
-            r.Add(new AnalyzerRule("H.323 ReleaseComplete",  @"[Rr]elease[Cc]omplete|[Hh]323.*[Rr]elease",         Severity.Info,    "H.323 ReleaseComplete — terminazione chiamata.", "All"));
-            r.Add(new AnalyzerRule("H.323 FastConnect",      @"[Ff]ast[Cc]onnect|fastStart",                       Severity.Info,    "H.323 FastConnect (fastStart) rilevato.", "All"));
-            r.Add(new AnalyzerRule("H.323 H245 Tunnel",      @"[Hh]245.*[Tt]unnel|[Tt]unnel.*[Hh]245",            Severity.Info,    "H.245 Tunneling attivo nel canale H.225.", "All"));
-            r.Add(new AnalyzerRule("H.323 Reject",           @"[Cc]all[Pp]roceeding.*[Rr]eject|[Cc]onference.*[Rr]eject|[Rr]elease.*[Rr]eason", Severity.Warning, "H.323 Chiamata rifiutata — verificare causa.", "All"));
-            r.Add(new AnalyzerRule("H.323 Gatekeeper ARQ",  @"\bARQ\b|\bACF\b|\bARJ\b",                           Severity.Info,    "H.323 Admission Request/Confirm/Reject verso Gatekeeper.", "All"));
-            r.Add(new AnalyzerRule("H.323 GK ARJ",          @"\bARJ\b",                                           Severity.Error,   "H.323 Admission Reject — Gatekeeper rifiuta la chiamata.", "All"));
-            r.Add(new AnalyzerRule("H.323 RAS Error",       @"\bRRJ\b|\bURJ\b|\bDRJ\b",                          Severity.Error,   "H.323 RAS Reject (RRJ/URJ/DRJ) — problema registrazione/deregistrazione.", "All"));
-            r.Add(new AnalyzerRule("H.245 TermCapSet",       @"[Tt]erminal[Cc]apability[Ss]et",                   Severity.Info,    "H.245 Terminal Capability Set — negoziazione codec.", "All"));
-            r.Add(new AnalyzerRule("H.245 OLC",              @"[Oo]pen[Ll]ogical[Cc]hannel",                       Severity.Info,    "H.245 OpenLogicalChannel — apertura canale media.", "All"));
-            r.Add(new AnalyzerRule("H.245 CloseLC",          @"[Cc]lose[Ll]ogical[Cc]hannel",                     Severity.Info,    "H.245 CloseLogicalChannel — chiusura canale media.", "All"));
+            r.Add(new AnalyzerRule("H.323 Setup",           @"\bSetup\b.*(?:H\.225|H323|h225)",                   Severity.Info,    L.B("Chiamata H.323 in ingresso/uscita (Setup).","Incoming/outgoing H.323 call (Setup)."), "All"));
+            r.Add(new AnalyzerRule("H.323 ReleaseComplete",  @"[Rr]elease[Cc]omplete|[Hh]323.*[Rr]elease",         Severity.Info,    L.B("H.323 ReleaseComplete — terminazione chiamata.","H.323 ReleaseComplete — call termination."), "All"));
+            r.Add(new AnalyzerRule("H.323 FastConnect",      @"[Ff]ast[Cc]onnect|fastStart",                       Severity.Info,    L.B("H.323 FastConnect (fastStart) rilevato.","H.323 FastConnect (fastStart) detected."), "All"));
+            r.Add(new AnalyzerRule("H.323 H245 Tunnel",      @"[Hh]245.*[Tt]unnel|[Tt]unnel.*[Hh]245",            Severity.Info,    L.B("H.245 Tunneling attivo nel canale H.225.","H.245 tunneling active in the H.225 channel."), "All"));
+            r.Add(new AnalyzerRule("H.323 Reject",           @"[Cc]all[Pp]roceeding.*[Rr]eject|[Cc]onference.*[Rr]eject|[Rr]elease.*[Rr]eason", Severity.Warning, L.B("H.323 Chiamata rifiutata — verificare causa.","H.323 call rejected — check the cause."), "All"));
+            r.Add(new AnalyzerRule("H.323 Gatekeeper ARQ",  @"\bARQ\b|\bACF\b|\bARJ\b",                           Severity.Info,    L.B("H.323 Admission Request/Confirm/Reject verso Gatekeeper.","H.323 Admission Request/Confirm/Reject towards the Gatekeeper."), "All"));
+            r.Add(new AnalyzerRule("H.323 GK ARJ",          @"\bARJ\b",                                           Severity.Error,   L.B("H.323 Admission Reject — Gatekeeper rifiuta la chiamata.","H.323 Admission Reject — the Gatekeeper rejects the call."), "All"));
+            r.Add(new AnalyzerRule("H.323 RAS Error",       @"\bRRJ\b|\bURJ\b|\bDRJ\b",                          Severity.Error,   L.B("H.323 RAS Reject (RRJ/URJ/DRJ) — problema registrazione/deregistrazione.","H.323 RAS Reject (RRJ/URJ/DRJ) — registration/deregistration problem."), "All"));
+            r.Add(new AnalyzerRule("H.245 TermCapSet",       @"[Tt]erminal[Cc]apability[Ss]et",                   Severity.Info,    L.B("H.245 Terminal Capability Set — negoziazione codec.","H.245 Terminal Capability Set — codec negotiation."), "All"));
+            r.Add(new AnalyzerRule("H.245 OLC",              @"[Oo]pen[Ll]ogical[Cc]hannel",                       Severity.Info,    L.B("H.245 OpenLogicalChannel — apertura canale media.","H.245 OpenLogicalChannel — media channel opening."), "All"));
+            r.Add(new AnalyzerRule("H.245 CloseLC",          @"[Cc]lose[Ll]ogical[Cc]hannel",                     Severity.Info,    L.B("H.245 CloseLogicalChannel — chiusura canale media.","H.245 CloseLogicalChannel — media channel closing."), "All"));
 
             // ── MEGACO / H.248 ───────────────────────────────────────────────────
-            r.Add(new AnalyzerRule("MEGACO ServiceChange",   @"[Ss]ervice[Cc]hange",                              Severity.Info,    "MEGACO ServiceChange — registrazione o deregistrazione Media Gateway.", "All"));
-            r.Add(new AnalyzerRule("MEGACO Add",             @"\bMEGACO\b.*\bAdd\b|\bAdd\b.*\bMEGACO\b|megaco.*\bAdd\b", Severity.Info, "MEGACO Add — creazione terminazione/context.", "All"));
-            r.Add(new AnalyzerRule("MEGACO Subtract",        @"[Mm]egaco.*[Ss]ubtract|[Ss]ubtract.*[Hh]248",      Severity.Info,    "MEGACO Subtract — rilascio terminazione.", "All"));
-            r.Add(new AnalyzerRule("MEGACO Modify",          @"[Mm]egaco.*[Mm]odify",                              Severity.Info,    "MEGACO Modify — modifica parametri terminazione (codec, RTP).", "All"));
-            r.Add(new AnalyzerRule("MEGACO Error",           @"[Mm]egaco.*[Ee]rror|[Hh]248.*[Ee]rror|megaco.*\b5[0-9]{2}\b", Severity.Error, "MEGACO errore — verificare codice causa e stato Media Gateway.", "All"));
-            r.Add(new AnalyzerRule("MEGACO Notify",          @"[Mm]egaco.*[Nn]otify",                              Severity.Info,    "MEGACO Notify — evento segnalato dal Media Gateway (DTMF, fax, on/off hook).", "All"));
+            r.Add(new AnalyzerRule("MEGACO ServiceChange",   @"[Ss]ervice[Cc]hange",                              Severity.Info,    L.B("MEGACO ServiceChange — registrazione o deregistrazione Media Gateway.","MEGACO ServiceChange — Media Gateway registration or deregistration."), "All"));
+            r.Add(new AnalyzerRule("MEGACO Add",             @"\bMEGACO\b.*\bAdd\b|\bAdd\b.*\bMEGACO\b|megaco.*\bAdd\b", Severity.Info, L.B("MEGACO Add — creazione terminazione/context.","MEGACO Add — termination/context creation."), "All"));
+            r.Add(new AnalyzerRule("MEGACO Subtract",        @"[Mm]egaco.*[Ss]ubtract|[Ss]ubtract.*[Hh]248",      Severity.Info,    L.B("MEGACO Subtract — rilascio terminazione.","MEGACO Subtract — termination release."), "All"));
+            r.Add(new AnalyzerRule("MEGACO Modify",          @"[Mm]egaco.*[Mm]odify",                              Severity.Info,    L.B("MEGACO Modify — modifica parametri terminazione (codec, RTP).","MEGACO Modify — termination parameter change (codec, RTP)."), "All"));
+            r.Add(new AnalyzerRule("MEGACO Error",           @"[Mm]egaco.*[Ee]rror|[Hh]248.*[Ee]rror|megaco.*\b5[0-9]{2}\b", Severity.Error, L.B("MEGACO errore — verificare codice causa e stato Media Gateway.","MEGACO error — check the cause code and Media Gateway status."), "All"));
+            r.Add(new AnalyzerRule("MEGACO Notify",          @"[Mm]egaco.*[Nn]otify",                              Severity.Info,    L.B("MEGACO Notify — evento segnalato dal Media Gateway (DTMF, fax, on/off hook).","MEGACO Notify — event reported by the Media Gateway (DTMF, fax, on/off hook)."), "All"));
 
             // ── SKINNY / SCCP ─────────────────────────────────────────────────────
-            r.Add(new AnalyzerRule("SCCP Register",         @"[Rr]egister[Mm]essage|SCCP.*[Rr]egist",             Severity.Info,    "SCCP/Skinny RegisterMessage — telefono si registra a CUCM.", "All"));
-            r.Add(new AnalyzerRule("SCCP CallState",        @"[Cc]all[Ss]tate[Mm]essage|[Cc]all[Ss]tate.*SCCP",   Severity.Info,    "SCCP CallState — cambio stato chiamata Skinny.", "All"));
-            r.Add(new AnalyzerRule("SCCP OpenReceiveChannel",@"[Oo]pen[Rr]eceive[Cc]hannel",                      Severity.Info,    "SCCP OpenReceiveChannel — apertura canale RTP su telefono Skinny.", "All"));
-            r.Add(new AnalyzerRule("SCCP CloseReceiveChannel",@"[Cc]lose[Rr]eceive[Cc]hannel",                   Severity.Info,    "SCCP CloseReceiveChannel — chiusura canale RTP.", "All"));
-            r.Add(new AnalyzerRule("SCCP StartMediaTransmission",@"[Ss]tart[Mm]edia[Tt]ransmission",              Severity.Info,    "SCCP StartMediaTransmission — inizio flusso RTP.", "All"));
-            r.Add(new AnalyzerRule("SCCP StopMediaTransmission",@"[Ss]top[Mm]edia[Tt]ransmission",               Severity.Info,    "SCCP StopMediaTransmission — fine flusso RTP.", "All"));
-            r.Add(new AnalyzerRule("SCCP Reset",            @"[Rr]eset.*SCCP|SCCP.*[Rr]eset|[Kk]eep[Aa]live.*[Ff]ail", Severity.Warning, "SCCP Reset o KeepAlive fallito — possibile perdita registrazione telefono.", "All"));
-            r.Add(new AnalyzerRule("SCCP Unregister",       @"[Uu]nregister[Mm]essage|SCCP.*[Uu]nreg",            Severity.Warning, "SCCP UnregisterMessage — telefono si deregistra.", "All"));
+            r.Add(new AnalyzerRule("SCCP Register",         @"[Rr]egister[Mm]essage|SCCP.*[Rr]egist",             Severity.Info,    L.B("SCCP/Skinny RegisterMessage — telefono si registra a CUCM.","SCCP/Skinny RegisterMessage — phone registers to CUCM."), "All"));
+            r.Add(new AnalyzerRule("SCCP CallState",        @"[Cc]all[Ss]tate[Mm]essage|[Cc]all[Ss]tate.*SCCP",   Severity.Info,    L.B("SCCP CallState — cambio stato chiamata Skinny.","SCCP CallState — Skinny call state change."), "All"));
+            r.Add(new AnalyzerRule("SCCP OpenReceiveChannel",@"[Oo]pen[Rr]eceive[Cc]hannel",                      Severity.Info,    L.B("SCCP OpenReceiveChannel — apertura canale RTP su telefono Skinny.","SCCP OpenReceiveChannel — RTP channel opening on a Skinny phone."), "All"));
+            r.Add(new AnalyzerRule("SCCP CloseReceiveChannel",@"[Cc]lose[Rr]eceive[Cc]hannel",                   Severity.Info,    L.B("SCCP CloseReceiveChannel — chiusura canale RTP.","SCCP CloseReceiveChannel — RTP channel closing."), "All"));
+            r.Add(new AnalyzerRule("SCCP StartMediaTransmission",@"[Ss]tart[Mm]edia[Tt]ransmission",              Severity.Info,    L.B("SCCP StartMediaTransmission — inizio flusso RTP.","SCCP StartMediaTransmission — RTP stream start."), "All"));
+            r.Add(new AnalyzerRule("SCCP StopMediaTransmission",@"[Ss]top[Mm]edia[Tt]ransmission",               Severity.Info,    L.B("SCCP StopMediaTransmission — fine flusso RTP.","SCCP StopMediaTransmission — RTP stream end."), "All"));
+            r.Add(new AnalyzerRule("SCCP Reset",            @"[Rr]eset.*SCCP|SCCP.*[Rr]eset|[Kk]eep[Aa]live.*[Ff]ail", Severity.Warning, L.B("SCCP Reset o KeepAlive fallito — possibile perdita registrazione telefono.","SCCP Reset or KeepAlive failed — possible phone registration loss."), "All"));
+            r.Add(new AnalyzerRule("SCCP Unregister",       @"[Uu]nregister[Mm]essage|SCCP.*[Uu]nreg",            Severity.Warning, L.B("SCCP UnregisterMessage — telefono si deregistra.","SCCP UnregisterMessage — phone deregisters."), "All"));
 
             // ── SIP-I (SIP con ISUP incapsulato) ─────────────────────────────────
-            r.Add(new AnalyzerRule("SIP-I ISUP Body",        @"[Cc]ontent-[Tt]ype.*application/isup|[Mm]imeType.*isup", Severity.Info, "SIP-I: body ISUP trovato. Chiamata verso/da rete SS7/PSTN.", "All"));
-            r.Add(new AnalyzerRule("SIP-I IAM",              @"[Ii][Aa][Mm].*isup|isup.*Initial [Aa]ddress",       Severity.Info,    "SIP-I Initial Address Message (IAM) — setup chiamata SS7.", "All"));
-            r.Add(new AnalyzerRule("SIP-I ANM",              @"\bANM\b.*isup|isup.*Answer",                        Severity.Info,    "SIP-I Answer Message (ANM) — risposta chiamata SS7.", "All"));
-            r.Add(new AnalyzerRule("SIP-I REL",              @"\bREL\b.*isup|isup.*[Rr]elease",                    Severity.Info,    "SIP-I Release Message (REL) — terminazione chiamata SS7.", "All"));
-            r.Add(new AnalyzerRule("SIP-I Cause Mismatch",   @"isup.*cause.*mismatch|[Cc]ause.*isup.*unmatch",     Severity.Warning, "SIP-I: disallineamento cause ISUP/SIP. Verificare mapping cause.", "All"));
+            r.Add(new AnalyzerRule("SIP-I ISUP Body",        @"[Cc]ontent-[Tt]ype.*application/isup|[Mm]imeType.*isup", Severity.Info, L.B("SIP-I: body ISUP trovato. Chiamata verso/da rete SS7/PSTN.","SIP-I: ISUP body found. Call to/from an SS7/PSTN network."), "All"));
+            r.Add(new AnalyzerRule("SIP-I IAM",              @"[Ii][Aa][Mm].*isup|isup.*Initial [Aa]ddress",       Severity.Info,    L.B("SIP-I Initial Address Message (IAM) — setup chiamata SS7.","SIP-I Initial Address Message (IAM) — SS7 call setup."), "All"));
+            r.Add(new AnalyzerRule("SIP-I ANM",              @"\bANM\b.*isup|isup.*Answer",                        Severity.Info,    L.B("SIP-I Answer Message (ANM) — risposta chiamata SS7.","SIP-I Answer Message (ANM) — SS7 call answer."), "All"));
+            r.Add(new AnalyzerRule("SIP-I REL",              @"\bREL\b.*isup|isup.*[Rr]elease",                    Severity.Info,    L.B("SIP-I Release Message (REL) — terminazione chiamata SS7.","SIP-I Release Message (REL) — SS7 call termination."), "All"));
+            r.Add(new AnalyzerRule("SIP-I Cause Mismatch",   @"isup.*cause.*mismatch|[Cc]ause.*isup.*unmatch",     Severity.Warning, L.B("SIP-I: disallineamento cause ISUP/SIP. Verificare mapping cause.","SIP-I: ISUP/SIP cause mismatch. Check cause mapping."), "All"));
 
             // ── IOS / Piattaforma — anomalie generiche (sempre incluse) ──────────
             // Formato syslog IOS: %FACILITY-SEVERITY-MNEMONIC (severity 0=emerg … 7=debug)
-            r.Add(new AnalyzerRule("IOS severità critica", @"%[A-Z0-9_]+-[0-2]-[A-Z0-9_]+", Severity.Critical, "Messaggio IOS di severità alta (emergency/alert/critical). Da verificare subito.", "All"));
-            r.Add(new AnalyzerRule("IOS errore",           @"%[A-Z0-9_]+-3-[A-Z0-9_]+",     Severity.Error,    "Messaggio IOS di errore (severity 3).", "All"));
-            r.Add(new AnalyzerRule("Interfaccia DOWN",     @"%(LINK|LINEPROTO)-\d-UPDOWN:.*(changed state to (down|administratively down)|Administrative Shutdown)", Severity.Warning, "Interfaccia / line protocol passata a DOWN.", "All"));
-            r.Add(new AnalyzerRule("Err-disable",          @"err[_-]?disable", Severity.Error, "Porta in err-disable. Verificare la causa (security violation, BPDU guard, flapping…).", "All"));
-            r.Add(new AnalyzerRule("Card/SPA offline",     @"OFFLINECARD|CARDREMOVE|OIR-\d-REM(SPA|CARD)", Severity.Warning, "Scheda/SPA rimossa o offline (OIR).", "All"));
-            r.Add(new AnalyzerRule("Reload / Crash",       @"%SYS-\d-RELOAD|System restarted|Traceback|crashinfo|forced reload", Severity.Critical, "Reload, crash o traceback del dispositivo.", "All"));
-            r.Add(new AnalyzerRule("Memoria / CPU",        @"%SYS-2-MALLOCFAIL|%SYS-\d-CPUHOG|[Mm]emory.*low|[Hh]igh CPU", Severity.Error, "Problema di memoria o CPU sul dispositivo.", "All"));
-            r.Add(new AnalyzerRule("Duplex mismatch",      @"duplex mismatch|%CDP-4-DUPLEX", Severity.Warning, "Possibile duplex mismatch su una porta.", "All"));
-            r.Add(new AnalyzerRule("Routing neighbor down",@"%(OSPF|BGP|EIGRP)-\d-(ADJCHG|ADJCHANGE|NBRCHANGE).*(Down|DOWN)|[Nn]eighbor.*Down", Severity.Warning, "Adiacenza/neighbor di routing caduta.", "All"));
-            r.Add(new AnalyzerRule("Login fallito",        @"%SEC_LOGIN-\d-LOGIN_FAILED|[Ll]ogin failed|authentication failed", Severity.Warning, "Login/autenticazione fallita sul dispositivo.", "All"));
+            r.Add(new AnalyzerRule(L.B("IOS severità critica","IOS critical severity"), @"%[A-Z0-9_]+-[0-2]-[A-Z0-9_]+", Severity.Critical, L.B("Messaggio IOS di severità alta (emergency/alert/critical). Da verificare subito.","High-severity IOS message (emergency/alert/critical). Check immediately."), "All"));
+            r.Add(new AnalyzerRule(L.B("IOS errore","IOS error"),           @"%[A-Z0-9_]+-3-[A-Z0-9_]+",     Severity.Error,    L.B("Messaggio IOS di errore (severity 3).","IOS error message (severity 3)."), "All"));
+            r.Add(new AnalyzerRule(L.B("Interfaccia DOWN","Interface DOWN"),     @"%(LINK|LINEPROTO)-\d-UPDOWN:.*(changed state to (down|administratively down)|Administrative Shutdown)", Severity.Warning, L.B("Interfaccia / line protocol passata a DOWN.","Interface / line protocol went DOWN."), "All"));
+            r.Add(new AnalyzerRule("Err-disable",          @"err[_-]?disable", Severity.Error, L.B("Porta in err-disable. Verificare la causa (security violation, BPDU guard, flapping…).","Port in err-disable. Check the cause (security violation, BPDU guard, flapping…)."), "All"));
+            r.Add(new AnalyzerRule("Card/SPA offline",     @"OFFLINECARD|CARDREMOVE|OIR-\d-REM(SPA|CARD)", Severity.Warning, L.B("Scheda/SPA rimossa o offline (OIR).","Card/SPA removed or offline (OIR)."), "All"));
+            r.Add(new AnalyzerRule("Reload / Crash",       @"%SYS-\d-RELOAD|System restarted|Traceback|crashinfo|forced reload", Severity.Critical, L.B("Reload, crash o traceback del dispositivo.","Device reload, crash or traceback."), "All"));
+            r.Add(new AnalyzerRule(L.B("Memoria / CPU","Memory / CPU"),        @"%SYS-2-MALLOCFAIL|%SYS-\d-CPUHOG|[Mm]emory.*low|[Hh]igh CPU", Severity.Error, L.B("Problema di memoria o CPU sul dispositivo.","Memory or CPU problem on the device."), "All"));
+            r.Add(new AnalyzerRule("Duplex mismatch",      @"duplex mismatch|%CDP-4-DUPLEX", Severity.Warning, L.B("Possibile duplex mismatch su una porta.","Possible duplex mismatch on a port."), "All"));
+            r.Add(new AnalyzerRule("Routing neighbor down",@"%(OSPF|BGP|EIGRP)-\d-(ADJCHG|ADJCHANGE|NBRCHANGE).*(Down|DOWN)|[Nn]eighbor.*Down", Severity.Warning, L.B("Adiacenza/neighbor di routing caduta.","Routing adjacency/neighbor went down."), "All"));
+            r.Add(new AnalyzerRule(L.B("Login fallito","Login failed"),        @"%SEC_LOGIN-\d-LOGIN_FAILED|[Ll]ogin failed|authentication failed", Severity.Warning, L.B("Login/autenticazione fallita sul dispositivo.","Login/authentication failed on the device."), "All"));
             // ── Voce/IOS hardware — utili sui gateway/SBC ──
-            r.Add(new AnalyzerRule("Controller/PRI down",  @"%(ISDN|CONTROLLER|DSX1)-\d-.*(DOWN|LAYER2_DOWN|loss of frame|LOS)", Severity.Error, "Controller/PRI/E1-T1 in errore o down. Verificare il link verso il carrier.", "All"));
-            r.Add(new AnalyzerRule("Voice port / DSP",     @"%FARM_DSPRM|%DSPRM|dsp.*(fail|crash|alarm)|PVDM.*(fail|offline)|%VOICE_HA", Severity.Warning, "Problema DSP/PVDM o voice port: possibile perdita di risorse media.", "All"));
-            r.Add(new AnalyzerRule("NTP non sincronizzato",@"%NTP.*(not synchronized|unsynchronized|UNSYNC)|clock is unsynchronized", Severity.Warning, "Orologio non sincronizzato (NTP): può rompere TLS/SRTP e disallineare i CDR. Usa Net Tools → NTP.", "All"));
-            r.Add(new AnalyzerRule("Alimentazione/Ventola", @"%ENVMON|%PLATFORM_THERMAL|%CISCO_ENVMON|power.?supply.*(fail|down)|fan.*(fail|fault)|over.?temp", Severity.Critical, "Allarme ambientale: alimentatore, ventola o temperatura. Intervento hardware.", "All"));
-            r.Add(new AnalyzerRule("Config cambiata",      @"%SYS-5-CONFIG_I:.*Configured", Severity.Info, "Configurazione modificata sul dispositivo (audit).", "All"));
+            r.Add(new AnalyzerRule("Controller/PRI down",  @"%(ISDN|CONTROLLER|DSX1)-\d-.*(DOWN|LAYER2_DOWN|loss of frame|LOS)", Severity.Error, L.B("Controller/PRI/E1-T1 in errore o down. Verificare il link verso il carrier.","Controller/PRI/E1-T1 in error or down. Check the link to the carrier."), "All"));
+            r.Add(new AnalyzerRule("Voice port / DSP",     @"%FARM_DSPRM|%DSPRM|dsp.*(fail|crash|alarm)|PVDM.*(fail|offline)|%VOICE_HA", Severity.Warning, L.B("Problema DSP/PVDM o voice port: possibile perdita di risorse media.","DSP/PVDM or voice port problem: possible loss of media resources."), "All"));
+            r.Add(new AnalyzerRule(L.B("NTP non sincronizzato","NTP not synchronized"),@"%NTP.*(not synchronized|unsynchronized|UNSYNC)|clock is unsynchronized", Severity.Warning, L.B("Orologio non sincronizzato (NTP): può rompere TLS/SRTP e disallineare i CDR. Usa Net Tools → NTP.","Clock not synchronized (NTP): can break TLS/SRTP and misalign CDRs. Use Net Tools → NTP."), "All"));
+            r.Add(new AnalyzerRule(L.B("Alimentazione/Ventola","Power/Fan"), @"%ENVMON|%PLATFORM_THERMAL|%CISCO_ENVMON|power.?supply.*(fail|down)|fan.*(fail|fault)|over.?temp", Severity.Critical, L.B("Allarme ambientale: alimentatore, ventola o temperatura. Intervento hardware.","Environmental alarm: power supply, fan or temperature. Hardware action needed."), "All"));
+            r.Add(new AnalyzerRule(L.B("Config cambiata","Config changed"),      @"%SYS-5-CONFIG_I:.*Configured", Severity.Info, L.B("Configurazione modificata sul dispositivo (audit).","Configuration changed on the device (audit)."), "All"));
 
             return r;
         }
@@ -283,19 +283,19 @@ namespace LosaTermVoip
                 rules = CiscoRules.Get(deviceType);
             };
 
-            var btnClear = new Button { Text = "🗑 Pulisci", Location = new Point(162, 2), Width = 80, Height = 24, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(80,80,80) };
+            var btnClear = new Button { Text = L.B("🗑 Pulisci","🗑 Clear"), Location = new Point(162, 2), Width = 80, Height = 24, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(80,80,80) };
             btnClear.FlatAppearance.BorderSize = 0;
             btnClear.Click += (s, e) => ClearFindings();
 
-            var btnSave = new Button { Text = "💾 Salva report", Location = new Point(248, 2), Width = 110, Height = 24, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(50,100,50) };
+            var btnSave = new Button { Text = L.B("💾 Salva report","💾 Save report"), Location = new Point(248, 2), Width = 110, Height = 24, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(50,100,50) };
             btnSave.FlatAppearance.BorderSize = 0;
             btnSave.Click += (s, e) => SaveReport();
 
-            var btnOpenLog = new Button { Text = "📄 Apri log", Location = new Point(364, 2), Width = 90, Height = 24, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(50,50,100) };
+            var btnOpenLog = new Button { Text = L.B("📄 Apri log","📄 Open log"), Location = new Point(364, 2), Width = 90, Height = 24, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Color.FromArgb(50,50,100) };
             btnOpenLog.FlatAppearance.BorderSize = 0;
             btnOpenLog.Click += (s, e) => { if (File.Exists(logFilePath)) Process.Start("notepad.exe", "\"" + logFilePath + "\""); };
 
-            var btnPcap = new Button { Text = "📦 Analizza PCAP", Location = new Point(460, 2), Width = 130, Height = 24, FlatStyle = FlatStyle.Flat, ForeColor = Color.Yellow, BackColor = Color.FromArgb(60,40,0) };
+            var btnPcap = new Button { Text = L.B("📦 Analizza PCAP","📦 Analyze PCAP"), Location = new Point(460, 2), Width = 130, Height = 24, FlatStyle = FlatStyle.Flat, ForeColor = Color.Yellow, BackColor = Color.FromArgb(60,40,0) };
             btnPcap.FlatAppearance.BorderSize = 0;
             btnPcap.Click += (s, e) => OpenPcap();
 
@@ -501,7 +501,7 @@ namespace LosaTermVoip
         {
             var sb = new StringBuilder();
             sb.AppendLine("══ Call Flow SIP ════════════════════════════════════════════════");
-            sb.AppendLine("  Ora            DIR   Metodo/Risposta         From → To");
+            sb.AppendLine(L.B("  Ora            DIR   Metodo/Risposta         From → To","  Time           DIR   Method/Response         From → To"));
             sb.AppendLine("────────────────────────────────────────────────────────────────");
             string lastCallId = null;
 
@@ -531,9 +531,9 @@ namespace LosaTermVoip
             lvFindings.BeginUpdate();
             foreach (var f in findings)
             {
-                string sev = f.Severity == Severity.Critical ? "CRITICO" :
-                             f.Severity == Severity.Error    ? "ERRORE"  :
-                             f.Severity == Severity.Warning  ? "AVVISO"  : "INFO";
+                string sev = f.Severity == Severity.Critical ? L.B("CRITICO","CRITICAL") :
+                             f.Severity == Severity.Error    ? L.B("ERRORE","ERROR")  :
+                             f.Severity == Severity.Warning  ? L.B("AVVISO","WARNING")  : "INFO";
 
                 var item = new ListViewItem(f.Timestamp.ToString("HH:mm:ss"));
                 item.SubItems.Add(sev);
@@ -612,7 +612,7 @@ namespace LosaTermVoip
         public void AnalyzePcap(string tshark, string pcapFile)
         {
             ClearFindings();
-            lblStats.Text = "⏳ Analisi PCAP: " + Path.GetFileName(pcapFile) + " ...";
+            lblStats.Text = L.B("⏳ Analisi PCAP: ","⏳ Analyzing PCAP: ") + Path.GetFileName(pcapFile) + " ...";
             pollTimer.Stop(); // nessun polling live per i tab PCAP standalone
 
             ThreadPool.QueueUserWorkItem(_ => RunPcapAnalysis(tshark, pcapFile));
@@ -656,7 +656,7 @@ namespace LosaTermVoip
                 .Where(v => !string.IsNullOrEmpty(v)));
 
             if (allLadder.Count == 0 && string.IsNullOrEmpty(allVerbose)) {
-                BeginInvoke((Action)(() => lblStats.Text = "⚠ Nessun messaggio VoIP (SIP/H.323/MEGACO/Skinny) trovato nel PCAP."));
+                BeginInvoke((Action)(() => lblStats.Text = L.B("⚠ Nessun messaggio VoIP (SIP/H.323/MEGACO/Skinny) trovato nel PCAP.","⚠ No VoIP messages (SIP/H.323/MEGACO/Skinny) found in the PCAP.")));
                 return;
             }
 
@@ -716,7 +716,7 @@ namespace LosaTermVoip
                 int mc = allLadder.Count;
                 string msg = string.Format("📦 PCAP [{0}]: {1} msg", protoStr, mc);
                 if (findings.Count > 0) msg += string.Format("  |  🔴 {0} err  🟡 {1} warn  🟢 {2} info", cntErr, cntWarn, cntInfo);
-                else msg += "  ✔ Nessun finding critico";
+                else msg += L.B("  ✔ Nessun finding critico","  ✔ No critical findings");
                 lblStats.Text = msg;
             }));
         }
@@ -724,8 +724,8 @@ namespace LosaTermVoip
         void OpenPcap()
         {
             using (var dlg = new OpenFileDialog {
-                Title  = "Seleziona file PCAP / PCAPNG",
-                Filter = "PCAP files|*.pcap;*.pcapng;*.cap|Tutti i file|*.*"
+                Title  = L.B("Seleziona file PCAP / PCAPNG","Select PCAP / PCAPNG file"),
+                Filter = L.B("PCAP files|*.pcap;*.pcapng;*.cap|Tutti i file|*.*","PCAP files|*.pcap;*.pcapng;*.cap|All files|*.*")
             })
             {
                 if (dlg.ShowDialog() != DialogResult.OK) return;
@@ -733,15 +733,15 @@ namespace LosaTermVoip
                 if (tshark == null)
                 {
                     MessageBox.Show(
-                        "tshark.exe non trovato.\n\n" +
-                        "Installa Wireshark (include tshark):\nhttps://www.wireshark.org/download.html\n\n" +
-                        "Poi riavvia LosaTermVoip.",
-                        "tshark mancante", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        L.B("tshark.exe non trovato.\n\n","tshark.exe not found.\n\n") +
+                        L.B("Installa Wireshark (include tshark):\nhttps://www.wireshark.org/download.html\n\n","Install Wireshark (includes tshark):\nhttps://www.wireshark.org/download.html\n\n") +
+                        L.B("Poi riavvia LosaTermVoip.","Then restart LosaTermVoip."),
+                        L.B("tshark mancante","tshark missing"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 // Reset findings per la nuova analisi PCAP
                 ClearFindings();
-                lblStats.Text = "⏳ Analisi PCAP in corso...";
+                lblStats.Text = L.B("⏳ Analisi PCAP in corso...","⏳ Analyzing PCAP...");
                 string pcapFile = dlg.FileName;
                 ThreadPool.QueueUserWorkItem(_ => {
                     // ── Passata 1: call flow strutturato con timestamp reali ──────
@@ -750,7 +750,7 @@ namespace LosaTermVoip
                     string verbose  = PcapAnalyzer.ExtractVerbose(tshark, pcapFile);
 
                     if ((pcapEntries == null || pcapEntries.Count == 0) && string.IsNullOrEmpty(verbose)) {
-                        BeginInvoke((Action)(() => lblStats.Text = "⚠ Nessun messaggio SIP trovato nel PCAP."));
+                        BeginInvoke((Action)(() => lblStats.Text = L.B("⚠ Nessun messaggio SIP trovato nel PCAP.","⚠ No SIP messages found in the PCAP.")));
                         return;
                     }
 
@@ -792,9 +792,9 @@ namespace LosaTermVoip
                     BeginInvoke((Action)(() => {
                         if (findings.Count > 0) AddFindings(findings);
                         else if (pcapEntries != null && pcapEntries.Count > 0)
-                            lblStats.Text = string.Format("✔ PCAP: {0} messaggi SIP — nessun finding critico.", pcapEntries.Count);
+                            lblStats.Text = string.Format(L.B("✔ PCAP: {0} messaggi SIP — nessun finding critico.","✔ PCAP: {0} SIP messages — no critical findings."), pcapEntries.Count);
                         else
-                            lblStats.Text = "✔ PCAP analizzato — nessun finding.";
+                            lblStats.Text = L.B("✔ PCAP analizzato — nessun finding.","✔ PCAP analyzed — no findings.");
                     }));
                 });
             }
@@ -937,13 +937,13 @@ namespace LosaTermVoip
                 Width = 28, Height = 24, FlatStyle = FlatStyle.Flat,
                 ForeColor = Color.White, BackColor = Color.FromArgb(80, 40, 40) };
             btnReset.FlatAppearance.BorderSize = 0;
-            new ToolTip().SetToolTip(btnReset, "Rimuovi filtro Call-ID");
+            new ToolTip().SetToolTip(btnReset, L.B("Rimuovi filtro Call-ID","Clear Call-ID filter"));
             btnReset.Click += (s, e) => { if (cmbCallId.Items.Count > 0) cmbCallId.SelectedIndex = 0; };
             filterBar.Controls.Add(btnReset);
 
             // Spunta: includi le gambe correlate della stessa telefonata (opt-in)
             chkCorr = new CheckBox { Text = "🔗 Gambe", Location = new Point(690, 6), AutoSize = true, ForeColor = Color.LightCyan };
-            new ToolTip().SetToolTip(chkCorr, "Mostra anche le gambe correlate della stessa telefonata (come selezionare più chiamate in Wireshark)");
+            new ToolTip().SetToolTip(chkCorr, L.B("Mostra anche le gambe correlate della stessa telefonata (come selezionare più chiamate in Wireshark)","Also show correlated legs of the same call (like selecting multiple calls in Wireshark)"));
             chkCorr.CheckedChanged += (s, e) => ApplyFilter();
             filterBar.Controls.Add(chkCorr);
 
@@ -951,10 +951,10 @@ namespace LosaTermVoip
             cmbGroupMode = new ComboBox { Location = new Point(772, 3), Width = 165,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.FromArgb(45, 55, 80), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-            cmbGroupMode.Items.Add("🔗 Per Call-ID");
-            cmbGroupMode.Items.Add("📞 Chiamata intera");
+            cmbGroupMode.Items.Add(L.B("🔗 Per Call-ID","🔗 By Call-ID"));
+            cmbGroupMode.Items.Add(L.B("📞 Chiamata intera","📞 Whole call"));
             cmbGroupMode.SelectedIndex = 0;
-            new ToolTip().SetToolTip(cmbGroupMode, "Per Call-ID = come Wireshark (una gamba per voce). Chiamata intera = unisce le gambe della stessa telefonata via numeri+tempo (utile attraverso gli SBC).");
+            new ToolTip().SetToolTip(cmbGroupMode, L.B("Per Call-ID = come Wireshark (una gamba per voce). Chiamata intera = unisce le gambe della stessa telefonata via numeri+tempo (utile attraverso gli SBC).","By Call-ID = like Wireshark (one leg each). Whole call = merges the legs of the same call by numbers+time (useful across SBCs)."));
             cmbGroupMode.SelectedIndexChanged += (s, e) => {
                 bool logical = cmbGroupMode.SelectedIndex == 1;
                 if (chkCorr != null) { chkCorr.Enabled = !logical; if (logical) chkCorr.Checked = false; }
@@ -1161,7 +1161,7 @@ namespace LosaTermVoip
         {
             if (list == null || list.Count == 0) return "";
             var sb = new StringBuilder();
-            sb.AppendLine("══ Diagnosi automatica ══════════════════════");
+            sb.AppendLine(L.B("══ Diagnosi automatica ══════════════════════","══ Automatic diagnosis ══════════════════════"));
 
             var groups = new List<string>();
             foreach (var m in list) { string g = GKey(m); if (!groups.Contains(g)) groups.Add(g); }
@@ -1204,21 +1204,21 @@ namespace LosaTermVoip
                 sb.AppendLine();
                 sb.AppendLine("▶ " + (calling == "" ? "?" : calling) + " → " + (called == "" ? "?" : called) + "   (" + cm.Count + " msg)");
 
-                if (has200) sb.AppendLine("  ✓ Connessa (200 OK)" + (hasBye ? " e terminata (BYE)" : ""));
-                else if (has487 || hasCancel) sb.AppendLine("  • Annullata dal chiamante (CANCEL/487) prima della risposta.");
+                if (has200) sb.AppendLine(L.B("  ✓ Connessa (200 OK)","  ✓ Connected (200 OK)") + (hasBye ? L.B(" e terminata (BYE)"," and ended (BYE)") : ""));
+                else if (has487 || hasCancel) sb.AppendLine(L.B("  • Annullata dal chiamante (CANCEL/487) prima della risposta.","  • Cancelled by the caller (CANCEL/487) before the answer."));
                 else if (failCodes.Count > 0)
                 {
                     int fc = failCodes[failCodes.Count - 1];
-                    sb.AppendLine("  ✗ FALLITA: " + VoipCodes.ShortSip(fc));
+                    sb.AppendLine(L.B("  ✗ FALLITA: ","  ✗ FAILED: ") + VoipCodes.ShortSip(fc));
                     string[] sv;
-                    if (VoipCodes.Sip.TryGetValue(fc, out sv)) sb.AppendLine("     → Da controllare: " + sv[2]);
+                    if (VoipCodes.Sip.TryGetValue(fc, out sv)) sb.AppendLine(L.B("     → Da controllare: ","     → What to check: ") + sv[2]);
                 }
-                else if (hasInvite) sb.AppendLine("  ⚠ Nessuna risposta finale (solo provvisorie) → timeout / peer non risponde / firewall.");
+                else if (hasInvite) sb.AppendLine(L.B("  ⚠ Nessuna risposta finale (solo provvisorie) → timeout / peer non risponde / firewall.","  ⚠ No final response (provisional only) → timeout / peer not answering / firewall."));
 
-                if (auth >= 2) sb.AppendLine("  ⚠ Challenge autenticazione ripetuti (" + auth + "×) → verifica credenziali/registrar.");
+                if (auth >= 2) sb.AppendLine(L.B("  ⚠ Challenge autenticazione ripetuti (","  ⚠ Repeated auth challenges (") + auth + L.B("×) → verifica credenziali/registrar.","×) → check credentials/registrar."));
 
-                if (has183) sb.AppendLine("  ♪ Early media (183 Session Progress): ringback/annuncio in-band dal remoto. Se l'utente non sente nulla → verifica taglio early media (P-Early-Media), percorso RTP e direzione media.");
-                else if (has180) sb.AppendLine("  ♪ Ringback locale (180 Ringing): generato dal lato chiamante.");
+                if (has183) sb.AppendLine(L.B("  ♪ Early media (183 Session Progress): ringback/annuncio in-band dal remoto. Se l'utente non sente nulla → verifica taglio early media (P-Early-Media), percorso RTP e direzione media.","  ♪ Early media (183 Session Progress): in-band ringback/announcement from the remote. If the user hears nothing → check early-media cut (P-Early-Media), RTP path and media direction."));
+                else if (has180) sb.AppendLine(L.B("  ♪ Ringback locale (180 Ringing): generato dal lato chiamante.","  ♪ Local ringback (180 Ringing): generated by the calling side."));
             }
             return sb.ToString();
         }
@@ -1649,29 +1649,29 @@ namespace LosaTermVoip
 
             // Analisi automatica del messaggio
             sb.AppendLine();
-            sb.AppendLine("══ Analisi ══════════════════════════════════");
+            sb.AppendLine(L.B("══ Analisi ══════════════════════════════════","══ Analysis ══════════════════════════════════"));
             if (m.Method.StartsWith("INVITE"))
-                sb.AppendLine(" ● Apertura sessione SIP.\n   Codec offerti: " + (m.Codecs ?? "n/d"));
+                sb.AppendLine(L.B(" ● Apertura sessione SIP.\n   Codec offerti: "," ● SIP session setup.\n   Offered codecs: ") + (m.Codecs ?? "n/a"));
             else if (m.Method.StartsWith("200"))
-                sb.AppendLine(" ● Risposta positiva — sessione stabilita o richiesta accettata.");
+                sb.AppendLine(L.B(" ● Risposta positiva — sessione stabilita o richiesta accettata."," ● Positive response — session established or request accepted."));
             else if (m.Method.StartsWith("100"))
-                sb.AppendLine(" ● Provisional: il server ha ricevuto l'INVITE, sta elaborando.");
+                sb.AppendLine(L.B(" ● Provisional: il server ha ricevuto l'INVITE, sta elaborando."," ● Provisional: the server received the INVITE and is processing."));
             else if (m.Method.StartsWith("183"))
-                sb.AppendLine(" ● Session Progress: early media disponibile (ring-back / IVR).");
+                sb.AppendLine(L.B(" ● Session Progress: early media disponibile (ring-back / IVR)."," ● Session Progress: early media available (ring-back / IVR)."));
             else if (m.Method.StartsWith("CANCEL"))
-                sb.AppendLine(" ⚠ Chiamata annullata prima della risposta.\n   Causa tipica: timeout ring, utente ha riagganciato.");
+                sb.AppendLine(L.B(" ⚠ Chiamata annullata prima della risposta.\n   Causa tipica: timeout ring, utente ha riagganciato."," ⚠ Call cancelled before the answer.\n   Typical cause: ring timeout, user hung up."));
             else if (m.Method.StartsWith("487"))
-                sb.AppendLine(" ⚠ Request Terminated: risposta al CANCEL.\n   Chiamata terminata normalmente lato server.");
+                sb.AppendLine(L.B(" ⚠ Request Terminated: risposta al CANCEL.\n   Chiamata terminata normalmente lato server."," ⚠ Request Terminated: response to CANCEL.\n   Call ended normally on the server side."));
             else if (m.Method.StartsWith("BYE"))
-                sb.AppendLine(" ● Fine sessione SIP (BYE).");
+                sb.AppendLine(L.B(" ● Fine sessione SIP (BYE)."," ● SIP session end (BYE)."));
             else if (m.Method.StartsWith("SUBSCRIBE"))
-                sb.AppendLine(" ● Sottoscrizione eventi (dialog, presence, MWI...).");
+                sb.AppendLine(L.B(" ● Sottoscrizione eventi (dialog, presence, MWI...)."," ● Event subscription (dialog, presence, MWI...)."));
             else if (m.Method.StartsWith("NOTIFY"))
-                sb.AppendLine(" ● Notifica evento al sottoscrittore.");
+                sb.AppendLine(L.B(" ● Notifica evento al sottoscrittore."," ● Event notification to the subscriber."));
             else if (m.Method.StartsWith("UPDATE"))
-                sb.AppendLine(" ● Aggiornamento parametri sessione (codec, hold...).");
+                sb.AppendLine(L.B(" ● Aggiornamento parametri sessione (codec, hold...)."," ● Session parameter update (codec, hold...)."));
             else if (Regex.IsMatch(m.Method, @"^[45]"))
-                sb.AppendLine(" 🔴 Errore SIP " + m.Method + "\n   Verificare configurazione e log CUCM/CUBE.");
+                sb.AppendLine(L.B(" 🔴 Errore SIP "," 🔴 SIP error ") + m.Method + L.B("\n   Verificare configurazione e log CUCM/CUBE.","\n   Check configuration and CUCM/CUBE logs."));
 
             txtInfo.Text = sb.ToString();
         }
@@ -1947,7 +1947,7 @@ namespace LosaTermVoip
                     detail.AppendLine(" SSRC    : " + st.Ssrc);
                     detail.AppendLine(" From    : " + e1);
                     detail.AppendLine(" To      : " + e2);
-                    detail.AppendLine(" Pacchetti: " + st.Pkts);
+                    detail.AppendLine(L.B(" Pacchetti: "," Packets: ") + st.Pkts);
                     detail.AppendLine(" Durata  : " + dur.ToString("F1") + " s");
 
                     // Qualità voce: perdita, jitter, MOS stimato
@@ -1957,7 +1957,7 @@ namespace LosaTermVoip
                     double lossPct = expected > 0 ? 100.0 * lost / expected : 0;
                     double jitterMs = st.Jitter / ClockHz(st.Ptype) * 1000.0;
                     double mos = EstimateMos(lossPct, jitterMs);
-                    detail.AppendLine("── Qualità voce ──");
+                    detail.AppendLine(L.B("── Qualità voce ──","── Voice quality ──"));
                     detail.AppendLine(" Persi    : " + lost + " / " + expected + "  (" + lossPct.ToString("F1") + "%)");
                     detail.AppendLine(" Jitter   : " + jitterMs.ToString("F1") + " ms");
                     detail.AppendLine(" MOS stim.: " + mos.ToString("F1") + "  (" + MosVerdict(mos) + ")");

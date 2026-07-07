@@ -126,14 +126,14 @@ namespace LosaTermVoip
 
             btnGo.Click += (s, e) => {
                 string host = txtHost.Text.Trim();
-                if (host.Length == 0) { MessageBox.Show("Inserisci host o IP.", "SIP OPTIONS"); return; }
+                if (host.Length == 0) { MessageBox.Show(L.B("Inserisci host o IP.","Enter a host or IP."), "SIP OPTIONS"); return; }
                 int port, to;
                 if (!int.TryParse(txtPort.Text.Trim(), out port)) port = 5060;
                 if (!int.TryParse(txtTo.Text.Trim(), out to)) to = 3000;
                 string trans = (string)cboTrans.SelectedItem;
                 btnGo.Enabled = false;
                 lblStat.Text = "…"; lblStat.ForeColor = Color.Khaki;
-                Show(outBox, "Invio OPTIONS " + trans + " a " + host + ":" + port + " …");
+                Show(outBox, L.B("Invio OPTIONS ","Sending OPTIONS ") + trans + L.B(" a "," to ") + host + ":" + port + " …");
                 var th = new Thread(delegate () { RunOptions(host, port, trans, to, outBox, lblStat, btnGo); });
                 th.IsBackground = true; th.Start();
             };
@@ -160,22 +160,24 @@ namespace LosaTermVoip
                 if (code > 0)
                 {
                     statTxt = "● " + code; statCol = (code >= 200 && code < 300) ? Color.LightGreen : Color.Orange;
-                    result = "✓ Risposta in " + ms + " ms (status " + code + ")\r\n" +
+                    result = L.B("✓ Risposta in ","✓ Reply in ") + ms + " ms (status " + code + ")\r\n" +
                              "──────────────────────────────────────────\r\n" + resp;
                 }
                 else
                 {
                     statTxt = "● ?"; statCol = Color.Orange;
-                    result = "Risposta ricevuta in " + ms + " ms (status non riconosciuto)\r\n" +
+                    result = L.B("Risposta ricevuta in ","Reply received in ") + ms + L.B(" ms (status non riconosciuto)\r\n"," ms (unrecognized status)\r\n") +
                              "──────────────────────────────────────────\r\n" + resp;
                 }
             }
             catch (Exception ex)
             {
-                statTxt = "● timeout / errore"; statCol = Color.OrangeRed;
-                result = "✗ Nessuna risposta.\r\n\r\n" + ex.Message +
-                         "\r\n\r\nPossibili cause: trunk giù, porta/trasporto errati, firewall, " +
-                         "oppure il SBC non risponde a OPTIONS da IP non whitelistati.";
+                statTxt = L.B("● timeout / errore","● timeout / error"); statCol = Color.OrangeRed;
+                result = L.B("✗ Nessuna risposta.\r\n\r\n","✗ No response.\r\n\r\n") + ex.Message +
+                         L.B("\r\n\r\nPossibili cause: trunk giù, porta/trasporto errati, firewall, " +
+                         "oppure il SBC non risponde a OPTIONS da IP non whitelistati.",
+                         "\r\n\r\nPossible causes: trunk down, wrong port/transport, firewall, " +
+                         "or the SBC doesn't answer OPTIONS from non-whitelisted IPs.");
             }
             Show(outBox, result);
             if (lblStat.InvokeRequired) lblStat.BeginInvoke((MethodInvoker)delegate { lblStat.Text = statTxt; lblStat.ForeColor = statCol; });
@@ -244,7 +246,7 @@ namespace LosaTermVoip
                 stream.Flush();
                 string resp = ReadResponse(stream, timeout);
                 sw.Stop(); ms = sw.ElapsedMilliseconds;
-                if (resp.Length == 0) throw new Exception("Connesso ma nessun dato ricevuto entro il timeout.");
+                if (resp.Length == 0) throw new Exception(L.B("Connesso ma nessun dato ricevuto entro il timeout.","Connected but no data received before timeout."));
                 return resp;
             }
         }
@@ -302,11 +304,11 @@ namespace LosaTermVoip
 
             btnGo.Click += (s, e) => {
                 string host = txtHost.Text.Trim();
-                if (host.Length == 0) { MessageBox.Show("Inserisci host.", "TLS"); return; }
+                if (host.Length == 0) { MessageBox.Show(L.B("Inserisci host.","Enter a host."), "TLS"); return; }
                 int port;
                 if (!int.TryParse(txtPort.Text.Trim(), out port)) port = 5061;
                 btnGo.Enabled = false;
-                Show(outBox, "Connessione TLS a " + host + ":" + port + " …");
+                Show(outBox, L.B("Connessione TLS a ","TLS connection to ") + host + ":" + port + " …");
                 var th = new Thread(delegate () { RunTls(host, port, outBox, btnGo); });
                 th.IsBackground = true; th.Start();
             };
@@ -327,38 +329,38 @@ namespace LosaTermVoip
                 using (var c = new TcpClient())
                 {
                     var ar = c.BeginConnect(host, port, null, null);
-                    if (!ar.AsyncWaitHandle.WaitOne(5000)) throw new Exception("Connessione scaduta.");
+                    if (!ar.AsyncWaitHandle.WaitOne(5000)) throw new Exception(L.B("Connessione scaduta.","Connection timed out."));
                     c.EndConnect(ar);
 
                     RemoteCertificateValidationCallback cb = delegate (object snd, X509Certificate crt, X509Chain chn, System.Net.Security.SslPolicyErrors err)
                     {
                         if (crt != null) cert = new X509Certificate2(crt);
-                        chainInfo = (err == System.Net.Security.SslPolicyErrors.None) ? "catena valida" : err.ToString();
-                        return true; // accetta per poter ispezionare anche cert scaduti/non fidati
+                        chainInfo = (err == System.Net.Security.SslPolicyErrors.None) ? L.B("catena valida","valid chain") : err.ToString();
+                        return true; // accept so we can inspect expired/untrusted certs too
                     };
                     var ssl = new SslStream(c.GetStream(), false, cb);
                     ssl.AuthenticateAsClient(host, null, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false);
 
-                    if (cert == null) throw new Exception("Handshake riuscito ma nessun certificato presentato.");
+                    if (cert == null) throw new Exception(L.B("Handshake riuscito ma nessun certificato presentato.","Handshake succeeded but no certificate presented."));
 
-                    string san = "(nessuno)";
+                    string san = L.B("(nessuno)","(none)");
                     foreach (X509Extension ext in cert.Extensions)
                         if (ext.Oid != null && ext.Oid.Value == "2.5.29.17")
                             san = ext.Format(false);
 
                     double days = (cert.NotAfter - DateTime.Now).TotalDays;
-                    string expFlag = days < 0 ? "  ⛔ SCADUTO!" : (days < 30 ? "  ⚠️ scade tra " + (int)days + " giorni" : "  ✓");
+                    string expFlag = days < 0 ? L.B("  ⛔ SCADUTO!","  ⛔ EXPIRED!") : (days < 30 ? L.B("  ⚠️ scade tra ","  ⚠️ expires in ") + (int)days + L.B(" giorni"," days") : "  ✓");
 
                     var sb = new StringBuilder();
-                    sb.Append("TLS negoziato : " + ssl.SslProtocol + "\r\n");
-                    sb.Append("Cifratura     : " + ssl.CipherAlgorithm + " " + ssl.CipherStrength + " bit\r\n");
-                    sb.Append("Validazione   : " + chainInfo + "\r\n");
+                    sb.Append(L.B("TLS negoziato : ","Negotiated TLS: ") + ssl.SslProtocol + "\r\n");
+                    sb.Append(L.B("Cifratura     : ","Cipher        : ") + ssl.CipherAlgorithm + " " + ssl.CipherStrength + " bit\r\n");
+                    sb.Append(L.B("Validazione   : ","Validation    : ") + chainInfo + "\r\n");
                     sb.Append("──────────────────────────────────────────\r\n");
-                    sb.Append("Soggetto (CN) : " + cert.GetNameInfo(X509NameType.SimpleName, false) + "\r\n");
+                    sb.Append(L.B("Soggetto (CN) : ","Subject (CN)  : ") + cert.GetNameInfo(X509NameType.SimpleName, false) + "\r\n");
                     sb.Append("SAN           : " + san.Replace("\r\n", ", ").TrimEnd(',', ' ') + "\r\n");
-                    sb.Append("Emittente     : " + cert.Issuer + "\r\n");
-                    sb.Append("Valido da     : " + cert.NotBefore + "\r\n");
-                    sb.Append("Valido fino   : " + cert.NotAfter + expFlag + "\r\n");
+                    sb.Append(L.B("Emittente     : ","Issuer        : ") + cert.Issuer + "\r\n");
+                    sb.Append(L.B("Valido da     : ","Valid from    : ") + cert.NotBefore + "\r\n");
+                    sb.Append(L.B("Valido fino   : ","Valid to      : ") + cert.NotAfter + expFlag + "\r\n");
                     sb.Append("Serial        : " + cert.SerialNumber + "\r\n");
                     sb.Append("Thumbprint    : " + cert.Thumbprint + "\r\n");
                     result = sb.ToString();
@@ -366,8 +368,9 @@ namespace LosaTermVoip
             }
             catch (Exception ex)
             {
-                result = "✗ Errore TLS:\r\n\r\n" + ex.Message +
-                         "\r\n\r\nVerifica host/porta (di solito 5061), che il SBC esponga TLS e che il firewall sia aperto.";
+                result = L.B("✗ Errore TLS:\r\n\r\n","✗ TLS error:\r\n\r\n") + ex.Message +
+                         L.B("\r\n\r\nVerifica host/porta (di solito 5061), che il SBC esponga TLS e che il firewall sia aperto.",
+                             "\r\n\r\nCheck host/port (usually 5061), that the SBC exposes TLS and the firewall is open.");
             }
             Show(outBox, result);
             if (btnGo.InvokeRequired) btnGo.BeginInvoke((MethodInvoker)delegate { btnGo.Enabled = true; });
@@ -393,7 +396,7 @@ namespace LosaTermVoip
                 "_sipfederationtls._tcp",   // federazione SIP (Teams/Lync)
                 "_xmpp-server._tcp", "_xmpp-client._tcp",
                 "_h323ls._udp", "_h323cs._tcp",
-                "(solo record A)" });
+                L.B("(solo record A)","(A record only)") });
             cboSrv.SelectedIndex = 1;
             top.Controls.Add(cboSrv);
 
@@ -406,10 +409,10 @@ namespace LosaTermVoip
 
             btnGo.Click += (s, e) => {
                 string dom = txtDom.Text.Trim().TrimStart('.');
-                if (dom.Length == 0) { MessageBox.Show("Inserisci un dominio.", "DNS"); return; }
+                if (dom.Length == 0) { MessageBox.Show(L.B("Inserisci un dominio.","Enter a domain."), "DNS"); return; }
                 string svc = (string)cboSrv.SelectedItem;
                 btnGo.Enabled = false;
-                Show(outBox, "Risoluzione in corso …");
+                Show(outBox, L.B("Risoluzione in corso …","Resolving …"));
                 var th = new Thread(delegate () { RunDns(svc, dom, outBox, btnGo); });
                 th.IsBackground = true; th.Start();
             };
@@ -432,14 +435,14 @@ namespace LosaTermVoip
                 try
                 {
                     List<SrvRec> recs = SrvLookup(srvName);
-                    if (recs.Count == 0) sb.Append("  (nessun record SRV)\r\n");
+                    if (recs.Count == 0) sb.Append(L.B("  (nessun record SRV)\r\n","  (no SRV records)\r\n"));
                     foreach (SrvRec r in recs)
                     {
-                        sb.Append("  prio " + r.Priority + "  peso " + r.Weight + "  porta " + r.Port + "  →  " + r.Target + "\r\n");
+                        sb.Append(L.B("  prio ","  prio ") + r.Priority + L.B("  peso ","  weight ") + r.Weight + L.B("  porta ","  port ") + r.Port + "  →  " + r.Target + "\r\n");
                         aTargets.Add(r.Target);
                     }
                 }
-                catch (Exception ex) { sb.Append("  Errore: " + ex.Message + "\r\n"); }
+                catch (Exception ex) { sb.Append(L.B("  Errore: ","  Error: ") + ex.Message + "\r\n"); }
                 sb.Append("\r\n");
             }
             else
@@ -458,7 +461,7 @@ namespace LosaTermVoip
                         if (ip.AddressFamily == AddressFamily.InterNetwork || ip.AddressFamily == AddressFamily.InterNetworkV6)
                             sb.Append("       " + ip + "\r\n");
                 }
-                catch (Exception ex) { sb.Append("       Errore: " + ex.Message + "\r\n"); }
+                catch (Exception ex) { sb.Append(L.B("       Errore: ","       Error: ") + ex.Message + "\r\n"); }
                 sb.Append("\r\n");
             }
 

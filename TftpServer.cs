@@ -36,7 +36,7 @@ namespace LosaTermVoip
             running = true;
             listenThread = new Thread(ListenLoop) { IsBackground = true };
             listenThread.Start();
-            Log("▶ TFTP in ascolto su UDP/" + port + "   root = " + root);
+            Log(L.B("▶ TFTP in ascolto su UDP/","▶ TFTP listening on UDP/") + port + "   root = " + root);
         }
 
         public void Stop()
@@ -44,7 +44,7 @@ namespace LosaTermVoip
             running = false;
             try { if (mainSock != null) mainSock.Close(); } catch { }
             mainSock = null;
-            Log("⏹ TFTP fermato.");
+            Log(L.B("⏹ TFTP fermato.","⏹ TFTP stopped."));
         }
 
         void ListenLoop()
@@ -95,7 +95,7 @@ namespace LosaTermVoip
 
         void SendFile(IPEndPoint client, string path, string name)
         {
-            if (!File.Exists(path)) { SendError(client, 1, "File not found"); Log("✗ non trovato: " + name); return; }
+            if (!File.Exists(path)) { SendError(client, 1, "File not found"); Log(L.B("✗ non trovato: ","✗ not found: ") + name); return; }
             try
             {
                 byte[] file = File.ReadAllBytes(path);
@@ -122,14 +122,14 @@ namespace LosaTermVoip
                             }
                             catch { }
                         }
-                        if (!acked) { Log("✗ timeout sul blocco " + block + " di '" + name + "'"); return; }
+                        if (!acked) { Log(L.B("✗ timeout sul blocco ","✗ timeout on block ") + block + L.B(" di '"," of '") + name + "'"); return; }
                         offset += len; block++;
                         if (len < 512) break;   // ultimo blocco
                     }
-                    Log("✔ inviato '" + name + "'  (" + file.Length + " byte)");
+                    Log(L.B("✔ inviato '","✔ sent '") + name + "'  (" + file.Length + L.B(" byte)"," bytes)"));
                 }
             }
-            catch (Exception ex) { SendError(client, 0, ex.Message); Log("✗ errore invio: " + ex.Message); }
+            catch (Exception ex) { SendError(client, 0, ex.Message); Log(L.B("✗ errore invio: ","✗ send error: ") + ex.Message); }
         }
 
         void RecvFile(IPEndPoint client, string path, string name)
@@ -150,7 +150,7 @@ namespace LosaTermVoip
                         {
                             var rep = new IPEndPoint(IPAddress.Any, 0);
                             byte[] data;
-                            try { data = sock.Receive(ref rep); } catch { Log("✗ timeout ricezione '" + name + "'"); return; }
+                            try { data = sock.Receive(ref rep); } catch { Log(L.B("✗ timeout ricezione '","✗ receive timeout '") + name + "'"); return; }
                             if (data.Length >= 4 && data[1] == 3)
                             {
                                 int b = (data[2] << 8) | data[3];
@@ -165,10 +165,10 @@ namespace LosaTermVoip
                             }
                         }
                     }
-                    Log("✔ ricevuto '" + name + "'");
+                    Log(L.B("✔ ricevuto '","✔ received '") + name + "'");
                 }
             }
-            catch (Exception ex) { SendError(client, 0, ex.Message); Log("✗ errore ricezione: " + ex.Message); }
+            catch (Exception ex) { SendError(client, 0, ex.Message); Log(L.B("✗ errore ricezione: ","✗ receive error: ") + ex.Message); }
         }
 
         static void SendAck(UdpClient sock, int block)

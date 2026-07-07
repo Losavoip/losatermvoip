@@ -276,8 +276,8 @@ namespace LosaTermVoip
 
         public static void CheckpointConnectGui(string siteName, Action<string> log)
         {
-            if (!CheckpointAvailable) { log("trac.exe non trovato."); return; }
-            if (Process.GetProcessesByName("TrGUI").Length == 0) { log("Avvio TrGUI..."); Process.Start(TrGUIExe); Thread.Sleep(2500); }
+            if (!CheckpointAvailable) { log(L.B("trac.exe non trovato.","trac.exe not found.")); return; }
+            if (Process.GetProcessesByName("TrGUI").Length == 0) { log(L.B("Avvio TrGUI...","Starting TrGUI...")); Process.Start(TrGUIExe); Thread.Sleep(2500); }
             log("Connessione Checkpoint: " + siteName);
             var psi = new ProcessStartInfo(TracExe, "connectgui -s \"" + siteName + "\"") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
             using (var p = Process.Start(psi)) p.WaitForExit(5000);
@@ -285,7 +285,7 @@ namespace LosaTermVoip
 
         public static void CheckpointDisconnect(Action<string> log)
         {
-            if (!CheckpointAvailable) { log("trac.exe non trovato."); return; }
+            if (!CheckpointAvailable) { log(L.B("trac.exe non trovato.","trac.exe not found.")); return; }
             log(RunTrac("disconnect"));
         }
 
@@ -305,8 +305,8 @@ namespace LosaTermVoip
         public static void FortinetOpen(Action<string> log)
         {
             string fc = FindFortiClient();
-            if (fc == null) { log("FortiClient non trovato."); return; }
-            log("Apertura FortiClient..."); Process.Start(fc);
+            if (fc == null) { log(L.B("FortiClient non trovato.","FortiClient not found.")); return; }
+            log(L.B("Apertura FortiClient...","Opening FortiClient...")); Process.Start(fc);
         }
 
         public static void WindowsVpnConnect(string name, string user, string pass, Action<string> log)
@@ -567,7 +567,7 @@ namespace LosaTermVoip
         public void OpenLog()
         {
             if (File.Exists(logFilePath)) Process.Start("notepad.exe", "\"" + logFilePath + "\"");
-            else MessageBox.Show("Log non ancora disponibile.", "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            else MessageBox.Show(L.B("Log non ancora disponibile.","Log not available yet."), "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         public void CloseSession()
@@ -601,7 +601,7 @@ namespace LosaTermVoip
             var lbl = new Label { Text = prompt, Location = new Point(10,12), Width = 330 };
             var txt = new TextBox { Text = def, Location = new Point(10,35), Width = 330 };
             var ok  = new Button { Text = "OK",      Location = new Point(170,65), Width = 80, DialogResult = DialogResult.OK };
-            var can = new Button { Text = "Annulla", Location = new Point(260,65), Width = 80, DialogResult = DialogResult.Cancel };
+            var can = new Button { Text = L.B("Annulla","Cancel"), Location = new Point(260,65), Width = 80, DialogResult = DialogResult.Cancel };
             f.Controls.AddRange(new Control[] { lbl, txt, ok, can });
             f.AcceptButton = ok; f.CancelButton = can;
             return f.ShowDialog() == DialogResult.OK ? txt.Text : null;
@@ -793,11 +793,11 @@ namespace LosaTermVoip
             Success = ok; pbar.MarqueeAnimationSpeed = 0;
             if (ok)
             {
-                Log("\n✔ Connessa! Apertura sessione...");
+                Log(L.B("\n✔ Connessa! Apertura sessione...","\n✔ Connected! Opening session..."));
                 Thread.Sleep(800);
                 BeginInvoke((Action)(() => { DialogResult = DialogResult.OK; Close(); }));
             }
-            else { Log("\nNon riuscita. Verifica il client VPN."); btnAction.Enabled = true; }
+            else { Log(L.B("\nNon riuscita. Verifica il client VPN.","\nFailed. Check the VPN client.")); btnAction.Enabled = true; }
         }
 
         void Start()
@@ -870,12 +870,12 @@ namespace LosaTermVoip
         void Transfer(object s, EventArgs e)
         {
             string local = txtLocal.Text.Trim(), remote = txtRemote.Text.Trim();
-            if (string.IsNullOrEmpty(local) || string.IsNullOrEmpty(remote)) { MessageBox.Show("Inserisci entrambi i percorsi."); return; }
+            if (string.IsNullOrEmpty(local) || string.IsNullOrEmpty(remote)) { MessageBox.Show(L.B("Inserisci entrambi i percorsi.","Enter both paths.")); return; }
             // controllo: il percorso remoto deve includere un file, non solo host:
             if (remote.TrimEnd().EndsWith(":") || remote.TrimEnd().EndsWith(":~/"))
             {
-                if (MessageBox.Show("Il percorso remoto non specifica un file.\n\nSu Cisco IOS devi indicare ad es. flash:config.txt\nSu Linux ad es. /home/user/file.\n\nContinuare comunque?",
-                    "Percorso remoto", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+                if (MessageBox.Show(L.B("Il percorso remoto non specifica un file.\n\nSu Cisco IOS devi indicare ad es. flash:config.txt\nSu Linux ad es. /home/user/file.\n\nContinuare comunque?","The remote path does not specify a file.\n\nOn Cisco IOS use e.g. flash:config.txt\nOn Linux e.g. /home/user/file.\n\nContinue anyway?"),
+                    L.B("Percorso remoto","Remote path"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
             }
             sawEofError = false;
             string pscp = TerminalLauncher.FindHelper("pscp.exe");
@@ -893,14 +893,20 @@ namespace LosaTermVoip
             proc.ErrorDataReceived  += (ps,pe) => { if (pe.Data != null) BeginInvoke((Action)(() => Log(pe.Data))); };
             proc.Exited += (ps,pe) => BeginInvoke((Action)(() => {
                 pbar.MarqueeAnimationSpeed = 0; btnGo.Enabled = true;
-                Log(proc.ExitCode == 0 ? "\n✔ Completato." : "\n✘ Errore (exit " + proc.ExitCode + ").");
+                Log(proc.ExitCode == 0 ? L.B("\n✔ Completato.","\n✔ Done.") : L.B("\n✘ Errore (exit ","\n✘ Error (exit ") + proc.ExitCode + ").");
                 if (sawEofError)
-                    Log("\n⚠ \"unexpected end-of-file\": il device ha chiuso la connessione.\n" +
+                    Log(L.B("\n⚠ \"unexpected end-of-file\": il device ha chiuso la connessione.\n" +
                         "  Cause tipiche su Cisco IOS:\n" +
                         "   • SCP server non abilitato → in conf:  ip scp server enable\n" +
                         "   • Il path non esiste (usa flash: / bootflash:, non ~/)\n" +
                         "   • L'utente non ha privilegio 15\n" +
-                        "  Su SBC/AudioCodes verifica che SFTP/SCP sia abilitato.");
+                        "  Su SBC/AudioCodes verifica che SFTP/SCP sia abilitato.",
+                        "\n⚠ \"unexpected end-of-file\": the device closed the connection.\n" +
+                        "  Typical causes on Cisco IOS:\n" +
+                        "   • SCP server not enabled → in conf:  ip scp server enable\n" +
+                        "   • The path does not exist (use flash: / bootflash:, not ~/)\n" +
+                        "   • The user lacks privilege 15\n" +
+                        "  On SBC/AudioCodes check that SFTP/SCP is enabled."));
             }));
             proc.Start(); proc.BeginOutputReadLine(); proc.BeginErrorReadLine();
         }
@@ -936,7 +942,7 @@ namespace LosaTermVoip
 
         void LoadDir()
         {
-            lblStatus.Text="Caricamento: "+currentPath; txtPath.Text=currentPath; lvFiles.Items.Clear();
+            lblStatus.Text=L.B("Caricamento: ","Loading: ")+currentPath; txtPath.Text=currentPath; lvFiles.Items.Clear();
             ThreadPool.QueueUserWorkItem(_=>{
                 try {
                     var req=MkReq(currentPath);
@@ -949,7 +955,7 @@ namespace LosaTermVoip
                     }
                 } catch(Exception ex) {
                     if (!IsDisposed && IsHandleCreated)
-                        BeginInvoke((Action)(()=>{ if(!IsDisposed) lblStatus.Text="Errore: "+ex.Message; }));
+                        BeginInvoke((Action)(()=>{ if(!IsDisposed) lblStatus.Text=L.B("Errore: ","Error: ")+ex.Message; }));
                 }
             });
         }
@@ -964,7 +970,7 @@ namespace LosaTermVoip
                 var item=new ListViewItem(new[]{name,isDir?"<DIR>":parts[4],parts[5]+" "+parts[6]+" "+parts[7],isDir?L.T("fb.type_folder"):"File"});
                 item.Tag=isDir; item.ForeColor=isDir?Color.DarkBlue:Color.Black; lvFiles.Items.Add(item);
             }
-            lblStatus.Text=currentPath+"  ("+lvFiles.Items.Count+" elementi)";
+            lblStatus.Text=currentPath+"  ("+lvFiles.Items.Count+L.B(" elementi)"," items)");
         }
 
         void OnDbl(object s,EventArgs e){ if(lvFiles.SelectedItems.Count==0)return; var item=lvFiles.SelectedItems[0]; if((bool)item.Tag){currentPath=currentPath.TrimEnd('/')+"/"+item.Text;LoadDir();}else Download(); }
@@ -973,16 +979,16 @@ namespace LosaTermVoip
         void Download()
         {
             if(lvFiles.SelectedItems.Count==0){MessageBox.Show(L.B("Seleziona un file.","Select a file."));return;} var item=lvFiles.SelectedItems[0]; if((bool)item.Tag){MessageBox.Show(L.B("Seleziona un file.","Select a file."));return;}
-            using(var dlg=new SaveFileDialog{FileName=item.Text}) if(dlg.ShowDialog()==DialogResult.OK){ string rp=currentPath.TrimEnd('/')+"/"+item.Text,lp=dlg.FileName; lblStatus.Text="Download: "+item.Text; ThreadPool.QueueUserWorkItem(_=>{ try{var req=MkReq(rp);req.Method=WebRequestMethods.Ftp.DownloadFile;using(var resp=(FtpWebResponse)req.GetResponse())using(var rs=resp.GetResponseStream())using(var fs=File.Create(lp))rs.CopyTo(fs);BeginInvoke((Action)(()=>lblStatus.Text="Download OK: "+item.Text));}catch(Exception ex){BeginInvoke((Action)(()=>lblStatus.Text="Errore: "+ex.Message));}}); }
+            using(var dlg=new SaveFileDialog{FileName=item.Text}) if(dlg.ShowDialog()==DialogResult.OK){ string rp=currentPath.TrimEnd('/')+"/"+item.Text,lp=dlg.FileName; lblStatus.Text="Download: "+item.Text; ThreadPool.QueueUserWorkItem(_=>{ try{var req=MkReq(rp);req.Method=WebRequestMethods.Ftp.DownloadFile;using(var resp=(FtpWebResponse)req.GetResponse())using(var rs=resp.GetResponseStream())using(var fs=File.Create(lp))rs.CopyTo(fs);BeginInvoke((Action)(()=>lblStatus.Text="Download OK: "+item.Text));}catch(Exception ex){BeginInvoke((Action)(()=>lblStatus.Text=L.B("Errore: ","Error: ")+ex.Message));}}); }
         }
 
         void Upload()
         {
-            using(var dlg=new OpenFileDialog()) if(dlg.ShowDialog()==DialogResult.OK){ string rp=currentPath.TrimEnd('/')+"/"+Path.GetFileName(dlg.FileName),lp=dlg.FileName; lblStatus.Text="Upload: "+Path.GetFileName(lp); ThreadPool.QueueUserWorkItem(_=>{ try{var req=MkReq(rp);req.Method=WebRequestMethods.Ftp.UploadFile;using(var fs=File.OpenRead(lp))using(var rs=req.GetRequestStream())fs.CopyTo(rs);BeginInvoke((Action)(()=>{lblStatus.Text="Upload OK.";LoadDir();}));}catch(Exception ex){BeginInvoke((Action)(()=>lblStatus.Text="Errore: "+ex.Message));}}); }
+            using(var dlg=new OpenFileDialog()) if(dlg.ShowDialog()==DialogResult.OK){ string rp=currentPath.TrimEnd('/')+"/"+Path.GetFileName(dlg.FileName),lp=dlg.FileName; lblStatus.Text="Upload: "+Path.GetFileName(lp); ThreadPool.QueueUserWorkItem(_=>{ try{var req=MkReq(rp);req.Method=WebRequestMethods.Ftp.UploadFile;using(var fs=File.OpenRead(lp))using(var rs=req.GetRequestStream())fs.CopyTo(rs);BeginInvoke((Action)(()=>{lblStatus.Text="Upload OK.";LoadDir();}));}catch(Exception ex){BeginInvoke((Action)(()=>lblStatus.Text=L.B("Errore: ","Error: ")+ex.Message));}}); }
         }
 
-        void MakeDir(){ string name=UI.InputBox("Nome nuova cartella:","Nuova Cartella"); if(string.IsNullOrWhiteSpace(name))return; try{var req=MkReq(currentPath.TrimEnd('/')+"/"+name);req.Method=WebRequestMethods.Ftp.MakeDirectory;req.GetResponse().Close();LoadDir();}catch(Exception ex){MessageBox.Show("Errore: "+ex.Message);} }
-        void Delete(){ if(lvFiles.SelectedItems.Count==0)return; var item=lvFiles.SelectedItems[0]; if(MessageBox.Show("Eliminare \""+item.Text+"\"?","Conferma",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return; try{var req=MkReq(currentPath.TrimEnd('/')+"/"+item.Text);req.Method=(bool)item.Tag?WebRequestMethods.Ftp.RemoveDirectory:WebRequestMethods.Ftp.DeleteFile;req.GetResponse().Close();LoadDir();}catch(Exception ex){MessageBox.Show("Errore: "+ex.Message);} }
+        void MakeDir(){ string name=UI.InputBox(L.B("Nome nuova cartella:","New folder name:"),L.B("Nuova Cartella","New Folder")); if(string.IsNullOrWhiteSpace(name))return; try{var req=MkReq(currentPath.TrimEnd('/')+"/"+name);req.Method=WebRequestMethods.Ftp.MakeDirectory;req.GetResponse().Close();LoadDir();}catch(Exception ex){MessageBox.Show(L.B("Errore: ","Error: ")+ex.Message);} }
+        void Delete(){ if(lvFiles.SelectedItems.Count==0)return; var item=lvFiles.SelectedItems[0]; if(MessageBox.Show(L.B("Eliminare \"","Delete \"")+item.Text+"\"?",L.B("Conferma","Confirm"),MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return; try{var req=MkReq(currentPath.TrimEnd('/')+"/"+item.Text);req.Method=(bool)item.Tag?WebRequestMethods.Ftp.RemoveDirectory:WebRequestMethods.Ftp.DeleteFile;req.GetResponse().Close();LoadDir();}catch(Exception ex){MessageBox.Show(L.B("Errore: ","Error: ")+ex.Message);} }
 
         FtpWebRequest MkReq(string path){ var req=(FtpWebRequest)WebRequest.Create("ftp://"+conn.Host+":"+conn.FtpPort+path); req.Credentials=new NetworkCredential(conn.Username,conn.FtpPassword??""); req.UsePassive=true;req.UseBinary=true;req.KeepAlive=false; return req; }
     }
@@ -1018,7 +1024,7 @@ namespace LosaTermVoip
         {
             claudePanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(20, 20, 30) };
             var lbl = new Label {
-                Text = "⏳ Apertura Claude AI...",
+                Text = L.B("⏳ Apertura Claude AI...","⏳ Opening Claude AI..."),
                 Dock = DockStyle.Fill, ForeColor = Color.CornflowerBlue,
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter
@@ -1044,7 +1050,7 @@ namespace LosaTermVoip
             try { browserProc = Process.Start(psi); }
             catch (Exception ex)
             {
-                lbl.Text = "❌ Errore avvio browser:\n" + ex.Message;
+                lbl.Text = L.B("❌ Errore avvio browser:\n","❌ Browser launch error:\n") + ex.Message;
                 return;
             }
 
@@ -1065,7 +1071,7 @@ namespace LosaTermVoip
                 }
                 if (page.IsHandleCreated)
                     page.BeginInvoke((Action)(() =>
-                        lbl.Text = "⚠ Timeout: la finestra Claude AI non è apparsa.\nRiprova."));
+                        lbl.Text = L.B("⚠ Timeout: la finestra Claude AI non è apparsa.\nRiprova.","⚠ Timeout: the Claude AI window didn't appear.\nTry again.")));
             });
         }
 
@@ -1296,12 +1302,12 @@ namespace LosaTermVoip
             var mVoip = new ToolStripMenuItem("🧰 VoIP");
             mVoip.DropDownItems.Add("🩺 SIP Health Check (1-click)", null, (s, e) => OpenHealthCheck());
             mVoip.DropDownItems.Add(new ToolStripSeparator());
-            mVoip.DropDownItems.Add("🗺️ Percorso di rete (LLDP/CDP)", null, (s, e) => OpenNetPath());
-            mVoip.DropDownItems.Add("🔴 Cattura LIVE → pcap",  null, (s, e) => OpenLiveCapture());
+            mVoip.DropDownItems.Add(L.B("🗺️ Percorso di rete (LLDP/CDP)","🗺️ Network Path (LLDP/CDP)"), null, (s, e) => OpenNetPath());
+            mVoip.DropDownItems.Add(L.B("🔴 Cattura LIVE → pcap","🔴 Live Capture → pcap"),  null, (s, e) => OpenLiveCapture());
             mVoip.DropDownItems.Add("🎧 RTP Player & DTMF",   null, (s, e) => OpenRtpPlayer());
             mVoip.DropDownItems.Add("📡 SIP OPTIONS Monitor", null, (s, e) => OpenOptionsMonitor());
             mVoip.DropDownItems.Add("🔑 SIP Registration Live", null, (s, e) => OpenSipRegister());
-            mVoip.DropDownItems.Add("🚀 Generatore traffico (load)", null, (s, e) => OpenTrafficGen());
+            mVoip.DropDownItems.Add(L.B("🚀 Generatore traffico (load)","🚀 Traffic generator (load)"), null, (s, e) => OpenTrafficGen());
             mVoip.DropDownItems.Add("🌐 DNS VoIP Analyzer",   null, (s, e) => OpenDnsVoip());
             mVoip.DropDownItems.Add("🛰️ Tester STUN / NAT",   null, (s, e) => OpenStunTester());
             mVoip.DropDownItems.Add("🧬 Raw SIP / Header tester", null, (s, e) => OpenRawSip());
@@ -1309,7 +1315,7 @@ namespace LosaTermVoip
             mVoip.DropDownItems.Add("🛠️ Provisioning Viewer",  null, (s, e) => OpenProvisioning());
             mVoip.DropDownItems.Add("🌐 SIP over WebSocket (WebRTC)", null, (s, e) => OpenWebRtc());
             mVoip.DropDownItems.Add("🔥 Firewall port-check",  null, (s, e) => OpenFirewallCheck());
-            mVoip.DropDownItems.Add("🧮 Calcolatori VoIP",    null, (s, e) => OpenVoipCalc());
+            mVoip.DropDownItems.Add(L.B("🧮 Calcolatori VoIP","🧮 VoIP Calculators"),    null, (s, e) => OpenVoipCalc());
 
             var mInfo = new ToolStripMenuItem("ℹ️ Info");
             mInfo.Click += (s, e) => ShowNetInfo();
@@ -1332,7 +1338,7 @@ namespace LosaTermVoip
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 ForeColor    = Color.FromArgb(0, 90, 200),   // blu (più leggibile del giallo)
                 Font         = new Font("Segoe UI", 9, FontStyle.Bold),
-                ToolTipText  = "Analizza un file PCAP/PCAPNG con tshark (Wireshark)"
+                ToolTipText  = L.B("Analizza un file PCAP/PCAPNG con tshark (Wireshark)","Analyze a PCAP/PCAPNG file with tshark (Wireshark)")
             };
             btnPcap.Click += (s, e) => OpenPcapTab();
 
@@ -1340,7 +1346,7 @@ namespace LosaTermVoip
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 ForeColor    = Color.FromArgb(150, 220, 255),
                 Font         = new Font("Segoe UI", 9, FontStyle.Bold),
-                ToolTipText  = "Avvia FTP Server o configura SFTP Server (OpenSSH)"
+                ToolTipText  = L.B("Avvia FTP Server o configura SFTP Server (OpenSSH)","Start FTP Server or configure SFTP Server (OpenSSH)")
             };
             btnServer.Click += (s, e) => OpenServerManager();
 
@@ -1404,17 +1410,17 @@ namespace LosaTermVoip
                 Alignment   = ToolStripItemAlignment.Right,
                 ForeColor   = Color.FromArgb(120, 230, 200),
                 Font        = new Font("Segoe UI", 9, FontStyle.Bold),
-                ToolTipText = "IP locale del PC (e IP VPN se una VPN è attiva)"
+                ToolTipText = L.B("IP locale del PC (e IP VPN se una VPN è attiva)","Local PC IP (and VPN IP if a VPN is active)")
             };
             tb.Items.Add(tslIp);
 
             // ── Selettore sessioni/tab aperti (in alto a destra) ──
-            tsbSessions = new ToolStripDropDownButton("🗂 Sessioni (1)") {
+            tsbSessions = new ToolStripDropDownButton(L.B("🗂 Sessioni (1)","🗂 Sessions (1)")) {
                 Alignment    = ToolStripItemAlignment.Right,
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 ForeColor    = Color.FromArgb(180, 220, 255),
                 Font         = new Font("Segoe UI", 9, FontStyle.Bold),
-                ToolTipText  = "Tutte le sessioni/schede aperte — clicca per saltare a una",
+                ToolTipText  = L.B("Tutte le sessioni/schede aperte — clicca per saltare a una","All open sessions/tabs — click to jump to one"),
                 DropDownDirection = ToolStripDropDownDirection.Left   // pulsante a destra → apri verso sinistra
             };
             tsbSessions.DropDownOpening += (s, e) => {
@@ -1436,7 +1442,7 @@ namespace LosaTermVoip
                     foreach (var tp in closable)
                     {
                         var page = tp;
-                        var ci = new ToolStripMenuItem("✕ Chiudi: " + page.Text.Trim()) { ForeColor = Color.Firebrick };
+                        var ci = new ToolStripMenuItem(L.B("✕ Chiudi: ","✕ Close: ") + page.Text.Trim()) { ForeColor = Color.Firebrick };
                         ci.Click += (s2, e2) => CloseTab(page);
                         tsbSessions.DropDownItems.Add(ci);
                     }
@@ -1454,7 +1460,7 @@ namespace LosaTermVoip
                 Font = new Font("Segoe UI", 8, FontStyle.Bold),
                 Visible = false
             };
-            tsbAnalyzer = new ToolStripButton("📊 Analizzatore") {
+            tsbAnalyzer = new ToolStripButton(L.B("📊 Analizzatore","📊 Analyzer")) {
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 ForeColor = Color.Yellow, BackColor = Color.FromArgb(120, 80, 0),
                 Font = new Font("Segoe UI", 8, FontStyle.Bold),
@@ -1466,14 +1472,14 @@ namespace LosaTermVoip
                 Font = new Font("Segoe UI", 8),
                 Visible = false
             };
-            tsbDetach = new ToolStripButton("⧉ Stacca") {
+            tsbDetach = new ToolStripButton(L.B("⧉ Stacca","⧉ Detach")) {
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 ForeColor = Color.White, BackColor = Color.FromArgb(40, 70, 120),
                 Font = new Font("Segoe UI", 8, FontStyle.Bold),
-                ToolTipText = "Stacca questa sessione in una finestra separata (per vederne due affiancate)",
+                ToolTipText = L.B("Stacca questa sessione in una finestra separata (per vederne due affiancate)","Detach this session into a separate window (to see two side by side)"),
                 Visible = false
             };
-            tsbClose = new ToolStripButton("✕ Chiudi") {
+            tsbClose = new ToolStripButton(L.B("✕ Chiudi","✕ Close")) {
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 ForeColor = Color.White, BackColor = Color.FromArgb(160, 30, 30),
                 Font = new Font("Segoe UI", 8, FontStyle.Bold),
@@ -1551,8 +1557,8 @@ namespace LosaTermVoip
                         else {
                             var cm = new ContextMenuStrip();
                             if (sshSessions.ContainsKey(page))
-                                cm.Items.Add("⧉ Stacca in finestra", null, (s2, e2) => DetachSession(page));
-                            cm.Items.Add("✕ Chiudi questa sessione", null, (s2, e2) => CloseTab(page));
+                                cm.Items.Add(L.B("⧉ Stacca in finestra","⧉ Detach to window"), null, (s2, e2) => DetachSession(page));
+                            cm.Items.Add(L.B("✕ Chiudi questa sessione","✕ Close this session"), null, (s2, e2) => CloseTab(page));
                             cm.Show(tabMain, e.Location);
                         }
                         return;
@@ -1561,7 +1567,7 @@ namespace LosaTermVoip
 
             tabLog = new TabPage("  Log  ");
             rtbLog = new RichTextBox { Dock = DockStyle.Fill, ReadOnly = true, BackColor = Color.FromArgb(20,20,20), ForeColor = Color.LightGreen, Font = new Font("Consolas", 9) };
-            var btnClear = new Button { Text = "Pulisci", Dock = DockStyle.Bottom, Height = 26 };
+            var btnClear = new Button { Text = L.B("Pulisci","Clear"), Dock = DockStyle.Bottom, Height = 26 };
             btnClear.Click += (s,e) => rtbLog.Clear();
             tabLog.Controls.Add(rtbLog); tabLog.Controls.Add(btnClear);
             tabMain.TabPages.Add(tabLog);
@@ -1634,15 +1640,15 @@ namespace LosaTermVoip
         bool EnsureVpn(Connection c)
         {
             if (c.VpnType == "Nessuna" || string.IsNullOrEmpty(c.VpnType)) return true;
-            if (VpnManager.CanReach(c.Host, c.Port, 1500)) { Log("Host raggiungibile, VPN skip."); return true; }
-            Log("Avvio VPN (" + c.VpnType + ")...");
+            if (VpnManager.CanReach(c.Host, c.Port, 1500)) { Log(L.B("Host raggiungibile, VPN skip.","Host reachable, VPN skip.")); return true; }
+            Log(L.B("Avvio VPN (","Starting VPN (") + c.VpnType + ")...");
             using (var f = new VpnConnectForm(c)) { f.ShowDialog(); return f.Success; }
         }
 
         // HTTP / HTTPS → apre nel browser selezionato
         void OpenWebUrl(Connection c)
         {
-            if (!EnsureVpn(c)) { Log("VPN non connessa. Annullato."); return; }
+            if (!EnsureVpn(c)) { Log(L.B("VPN non connessa. Annullato.","VPN not connected. Cancelled.")); return; }
             int defaultPort = c.Protocol == "HTTPS" ? 443 : 80;
             int port = c.Port > 0 ? c.Port : defaultPort;
             string portPart = (port == defaultPort) ? "" : ":" + port;
@@ -1691,7 +1697,7 @@ namespace LosaTermVoip
 
             string putty = TerminalLauncher.FindPutty();
             if (putty == null) { MessageBox.Show(L.B("putty.exe non trovato.\n\nCopia putty.exe accanto a LosaTermVoip.exe\noppure in C:\\Program Files\\PuTTY\\","putty.exe not found.\n\nCopy putty.exe next to LosaTermVoip.exe\nor into C:\\Program Files\\PuTTY\\"),L.B("PuTTY mancante","PuTTY missing"),MessageBoxButtons.OK,MessageBoxIcon.Warning); return; }
-            if (!EnsureVpn(c)) { Log("VPN non connessa. Annullato."); return; }
+            if (!EnsureVpn(c)) { Log(L.B("VPN non connessa. Annullato.","VPN not connected. Cancelled.")); return; }
 
             Log("SSH embedded → " + c.Username + "@" + c.Host);
             var tabPage = new TabPage("  " + c.Name + "  ");
@@ -1890,7 +1896,7 @@ namespace LosaTermVoip
         void OpenSerial()
         {
             string putty = TerminalLauncher.FindPutty();
-            if (putty == null) { MessageBox.Show("putty.exe non trovato.\n\nCopia putty.exe accanto a LosaTermVoip.exe oppure in C:\\Program Files\\PuTTY\\.", "PuTTY mancante", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (putty == null) { MessageBox.Show(L.B("putty.exe non trovato.\n\nCopia putty.exe accanto a LosaTermVoip.exe oppure in C:\\Program Files\\PuTTY\\.","putty.exe not found.\n\nCopy putty.exe next to LosaTermVoip.exe or into C:\\Program Files\\PuTTY\\."), L.B("PuTTY mancante","PuTTY missing"), MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             using (var d = new SerialConsolePanel())
             {
                 try { d.Icon = AppIcon.Shared; } catch { }
@@ -1936,22 +1942,24 @@ namespace LosaTermVoip
                 string pf  = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
                 string pf86= Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
                 MessageBox.Show(
-                    "tshark.exe non trovato.\n\n" +
-                    "Cercato in:\n" +
+                    L.B("tshark.exe non trovato.\n\n","tshark.exe not found.\n\n") +
+                    L.B("Cercato in:\n","Searched in:\n") +
                     "  • " + pf  + "\\Wireshark\\tshark.exe\n" +
                     "  • " + pf86 + "\\Wireshark\\tshark.exe\n" +
                     "  • Registry HKLM\\SOFTWARE\\Wireshark\n" +
-                    "  • PATH di sistema\n\n" +
-                    "Wireshark è installato? Se sì, durante l'installazione\n" +
-                    "assicurati di aver spuntato \"TShark\".\n\n" +
+                    L.B("  • PATH di sistema\n\n","  • System PATH\n\n") +
+                    L.B("Wireshark è installato? Se sì, durante l'installazione\n" +
+                    "assicurati di aver spuntato \"TShark\".\n\n",
+                    "Is Wireshark installed? If so, during setup\n" +
+                    "make sure you ticked \"TShark\".\n\n") +
                     "Download: https://www.wireshark.org/download.html",
-                    "tshark mancante", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    L.B("tshark mancante","tshark missing"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             using (var dlg = new OpenFileDialog {
-                Title  = "Seleziona file PCAP da analizzare",
-                Filter = "PCAP files|*.pcap;*.pcapng;*.cap|Tutti i file|*.*"
+                Title  = L.B("Seleziona file PCAP da analizzare","Select PCAP file to analyze"),
+                Filter = L.B("PCAP files|*.pcap;*.pcapng;*.cap|Tutti i file|*.*","PCAP files|*.pcap;*.pcapng;*.cap|All files|*.*")
             })
             {
                 if (dlg.ShowDialog() != DialogResult.OK) return;
@@ -1963,7 +1971,7 @@ namespace LosaTermVoip
         public void OpenPcapFile(string pcapFile)
         {
             string tshark = PcapAnalyzer.FindTshark();
-            if (tshark == null) { MessageBox.Show("tshark.exe non trovato (installa Wireshark con TShark)."); return; }
+            if (tshark == null) { MessageBox.Show(L.B("tshark.exe non trovato (installa Wireshark con TShark).","tshark.exe not found (install Wireshark with TShark).")); return; }
 
             pcapTabCounter++;
             string shortName = Path.GetFileName(pcapFile);
@@ -1998,7 +2006,7 @@ namespace LosaTermVoip
                 if (files == null || files.Length == 0) return;
                 foreach (var f in files) ProcessDroppedFile(f);
             }
-            catch (Exception ex) { Log("Errore drag&drop: " + ex.Message); }
+            catch (Exception ex) { Log(L.B("Errore drag&drop: ","Drag&drop error: ") + ex.Message); }
         }
 
         void ProcessDroppedFile(string file)
@@ -2033,7 +2041,7 @@ namespace LosaTermVoip
                 if (syslogForm == null || syslogForm.IsDisposed) syslogForm = new SyslogServerPanel();
                 syslogForm.Show(this); syslogForm.BringToFront();
                 syslogForm.LoadFromFile(file);
-            } catch (Exception ex) { Log("Errore apertura log: " + ex.Message); }
+            } catch (Exception ex) { Log(L.B("Errore apertura log: ","Log open error: ") + ex.Message); }
         }
 
         void OpenInTranslatorX(string file)
@@ -2041,14 +2049,17 @@ namespace LosaTermVoip
             string tx = TerminalLauncher.FindTranslatorX();
             if (tx == null)
             {
-                MessageBox.Show("TranslatorX.exe non trovato automaticamente.\n\n" +
+                MessageBox.Show(L.B("TranslatorX.exe non trovato automaticamente.\n\n" +
                     "Cercato in Program Files, Desktop e PATH.\n" +
-                    "Apri TranslatorX manualmente e carica il file:\n" + file,
+                    "Apri TranslatorX manualmente e carica il file:\n",
+                    "TranslatorX.exe not found automatically.\n\n" +
+                    "Searched in Program Files, Desktop and PATH.\n" +
+                    "Open TranslatorX manually and load the file:\n") + file,
                     "TranslatorX", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 try { Process.Start("explorer.exe", "/select,\"" + file + "\""); } catch { }
                 return;
             }
-            Log("TranslatorX ← " + Path.GetFileName(file) + " (apertura via File>Open)…");
+            Log("TranslatorX ← " + Path.GetFileName(file) + L.B(" (apertura via File>Open)…"," (opening via File>Open)…"));
             // L'automazione (Ctrl+O + incolla path + Invio) va eseguita su un thread STA
             var t = new Thread(() =>
             {
@@ -2056,8 +2067,8 @@ namespace LosaTermVoip
                 bool ok = TranslatorXLauncher.OpenLog(tx, file, out err);
                 if (!ok && err != null)
                     BeginInvoke((Action)(() => MessageBox.Show(
-                        "Non sono riuscito ad aprire automaticamente il log in TranslatorX:\n" + err +
-                        "\n\nAprilo a mano con File > Open:\n" + file, "TranslatorX",
+                        L.B("Non sono riuscito ad aprire automaticamente il log in TranslatorX:\n","Could not open the log automatically in TranslatorX:\n") + err +
+                        L.B("\n\nAprilo a mano con File > Open:\n","\n\nOpen it manually with File > Open:\n") + file, "TranslatorX",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning)));
             });
             t.SetApartmentState(ApartmentState.STA);
@@ -2091,7 +2102,7 @@ namespace LosaTermVoip
         {
             sshSessions.Remove(page);
             tabMain.TabPages.Remove(page);
-            Log("Sessione chiusa: " + name);
+            Log(L.B("Sessione chiusa: ","Session closed: ") + name);
             SyncSshBar();
         }
 
@@ -2102,10 +2113,10 @@ namespace LosaTermVoip
             if (page == null || page == tabLog || !sshSessions.TryGetValue(page, out st)) return;
             IntPtr h = st.DetachWindow();
             if (h == IntPtr.Zero)
-            { MessageBox.Show("La sessione è ancora in avvio: riprova tra un istante.", "Stacca sessione", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            { MessageBox.Show(L.B("La sessione è ancora in avvio: riprova tra un istante.","The session is still starting: try again in a moment."), L.B("Stacca sessione","Detach session"), MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
             sshSessions.Remove(page);            // togli il tab MA non chiudere PuTTY
             tabMain.TabPages.Remove(page);
-            Log("Sessione staccata in finestra separata.");
+            Log(L.B("Sessione staccata in finestra separata.","Session detached into a separate window."));
             SyncSshBar();
         }
 
@@ -2121,7 +2132,7 @@ namespace LosaTermVoip
         void UpdateSessionsButton()
         {
             if (tsbSessions == null || tabMain == null) return;
-            tsbSessions.Text = "🗂 Sessioni (" + tabMain.TabPages.Count + ")";
+            tsbSessions.Text = L.B("🗂 Sessioni (","🗂 Sessions (") + tabMain.TabPages.Count + ")";
         }
 
         void SyncSshBar()
@@ -2159,7 +2170,7 @@ namespace LosaTermVoip
         void ConnectStandalone()
         {
             var c = Sel(); if (c == null) return;
-            if (!EnsureVpn(c)) { Log("VPN non connessa. Annullato."); return; }
+            if (!EnsureVpn(c)) { Log(L.B("VPN non connessa. Annullato.","VPN not connected. Cancelled.")); return; }
             Log("SSH finestra → " + c.Username + "@" + c.Host);
             TerminalLauncher.LaunchSshStandalone(c);
         }
@@ -2167,17 +2178,17 @@ namespace LosaTermVoip
         void OpenSftp()
         {
             var c = Sel(); if (c == null) return;
-            if (!EnsureVpn(c)) { Log("VPN non connessa."); return; }
+            if (!EnsureVpn(c)) { Log(L.B("VPN non connessa.","VPN not connected.")); return; }
             Log("SFTP → " + c.Host);
             Log("  (Se il terminale si chiude con \"unexpected end-of-file\": il device non ha");
-            Log("   un server SFTP attivo — tipico su Cisco IOS. Usa SCP o abilita SFTP sul device.)");
+            Log(L.B("   un server SFTP attivo — tipico su Cisco IOS. Usa SCP o abilita SFTP sul device.)","   an active SFTP server — typical on Cisco IOS. Use SCP or enable SFTP on the device.)"));
             TerminalLauncher.LaunchSftp(c);
         }
-        void OpenScp()  { var c=Sel();if(c==null)return; if(!EnsureVpn(c)){Log("VPN non connessa.");return;} new ScpTransferForm(c).Show(); }
-        void OpenFtp()  { var c=Sel();if(c==null)return; if(!EnsureVpn(c)){Log("VPN non connessa.");return;} new FtpBrowserForm(c).Show(); }
+        void OpenScp()  { var c=Sel();if(c==null)return; if(!EnsureVpn(c)){Log(L.B("VPN non connessa.","VPN not connected."));return;} new ScpTransferForm(c).Show(); }
+        void OpenFtp()  { var c=Sel();if(c==null)return; if(!EnsureVpn(c)){Log(L.B("VPN non connessa.","VPN not connected."));return;} new FtpBrowserForm(c).Show(); }
 
-        void ShowVpnInfo()  { if(!VpnManager.CheckpointAvailable){MessageBox.Show("Checkpoint non trovato.\nVerifica C:\\Program Files (x86)\\CheckPoint\\Endpoint Connect\\trac.exe","VPN");return;} MessageBox.Show(VpnManager.RunTrac("info"),"VPN Info",MessageBoxButtons.OK,MessageBoxIcon.Information); }
-        void OpenVpnGui()   { string g=@"C:\Program Files (x86)\CheckPoint\Endpoint Connect\TrGUI.exe"; if(File.Exists(g))Process.Start(g); else MessageBox.Show("TrGUI.exe non trovato."); }
+        void ShowVpnInfo()  { if(!VpnManager.CheckpointAvailable){MessageBox.Show(L.B("Checkpoint non trovato.\nVerifica C:\\Program Files (x86)\\CheckPoint\\Endpoint Connect\\trac.exe","Checkpoint not found.\nCheck C:\\Program Files (x86)\\CheckPoint\\Endpoint Connect\\trac.exe"),"VPN");return;} MessageBox.Show(VpnManager.RunTrac("info"),"VPN Info",MessageBoxButtons.OK,MessageBoxIcon.Information); }
+        void OpenVpnGui()   { string g=@"C:\Program Files (x86)\CheckPoint\Endpoint Connect\TrGUI.exe"; if(File.Exists(g))Process.Start(g); else MessageBox.Show(L.B("TrGUI.exe non trovato.","TrGUI.exe not found.")); }
         void DisconnectWinVpn() { string name=UI.InputBox("Nome connessione Windows VPN:","Disconnetti VPN"); if(!string.IsNullOrEmpty(name))VpnManager.WindowsVpnDisconnect(name,Log); }
 
         void VpnConnectManual(string vpnType)
@@ -2195,20 +2206,20 @@ namespace LosaTermVoip
                 if (string.IsNullOrWhiteSpace(tmp.VpnSite)) return;
                 tmp.VpnUsername = UI.InputBox("Utente (lascia vuoto se non serve):", "Windows VPN", "");
             }
-            Log("Avvio VPN " + vpnType + "...");
+            Log(L.B("Avvio VPN ","Starting VPN ") + vpnType + "...");
             using (var f = new VpnConnectForm(tmp)) f.ShowDialog();
             UpdateStatus();
         }
-        void ShowPuttyPath() { string p=TerminalLauncher.FindPutty(); string exeDir=Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); MessageBox.Show(p!=null?"PuTTY trovato:\n"+p+"\n\nAuto-login attivo.":"putty.exe non trovato.\n\nCopia putty.exe in:\n"+exeDir,"PuTTY",MessageBoxButtons.OK,p!=null?MessageBoxIcon.Information:MessageBoxIcon.Warning); }
+        void ShowPuttyPath() { string p=TerminalLauncher.FindPutty(); string exeDir=Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location); MessageBox.Show(p!=null?L.B("PuTTY trovato:\n","PuTTY found:\n")+p+L.B("\n\nAuto-login attivo.","\n\nAuto-login active."):L.B("putty.exe non trovato.\n\nCopia putty.exe in:\n","putty.exe not found.\n\nCopy putty.exe into:\n")+exeDir,"PuTTY",MessageBoxButtons.OK,p!=null?MessageBoxIcon.Information:MessageBoxIcon.Warning); }
         void TestReach()
         {
             var c = Sel(); if (c == null) return;
             tabMain.SelectedTab = tabLog;   // mostra il log così l'utente vede l'output
-            Log("── Test connettività: " + c.Host + " (porta " + c.Port + ") ──");
+            Log(L.B("── Test connettività: ","── Connectivity test: ") + c.Host + L.B(" (porta "," (port ") + c.Port + ") ──");
             ThreadPool.QueueUserWorkItem(_ =>
             {
                 // 1) Ping ICMP
-                string pingRes = "✘ no risposta";
+                string pingRes = L.B("✘ nessuna risposta","✘ no reply");
                 long rtt = -1;
                 try
                 {
@@ -2228,14 +2239,14 @@ namespace LosaTermVoip
                 BeginInvoke((Action)(() =>
                 {
                     Log("  Ping ICMP : " + pingRes);
-                    Log("  TCP :" + c.Port + "  : " + (tcpOk ? "✔ aperta" : "✘ chiusa/filtrata"));
+                    Log("  TCP :" + c.Port + "  : " + (tcpOk ? L.B("✔ aperta","✔ open") : L.B("✘ chiusa/filtrata","✘ closed/filtered")));
                     string summary =
                         "Host: " + c.Host + "\n\n" +
                         "Ping ICMP: " + pingRes + "\n" +
-                        "Porta TCP " + c.Port + ": " + (tcpOk ? "✔ raggiungibile" : "✘ non raggiungibile") +
-                        (!tcpOk && rtt >= 0 ? "\n\nL'host risponde al ping ma la porta è chiusa/filtrata\n(servizio spento o firewall)." : "") +
-                        (rtt < 0 && tcpOk ? "\n\nLa porta risponde ma il ping è bloccato (normale su molti firewall)." : "");
-                    MessageBox.Show(summary, "Test connettività",
+                        L.B("Porta TCP ","TCP port ") + c.Port + ": " + (tcpOk ? L.B("✔ raggiungibile","✔ reachable") : L.B("✘ non raggiungibile","✘ unreachable")) +
+                        (!tcpOk && rtt >= 0 ? L.B("\n\nL'host risponde al ping ma la porta è chiusa/filtrata\n(servizio spento o firewall).","\n\nThe host answers ping but the port is closed/filtered\n(service down or firewall).") : "") +
+                        (rtt < 0 && tcpOk ? L.B("\n\nLa porta risponde ma il ping è bloccato (normale su molti firewall).","\n\nThe port responds but ping is blocked (normal on many firewalls).") : "");
+                    MessageBox.Show(summary, L.B("Test connettività","Connectivity test"),
                         MessageBoxButtons.OK,
                         tcpOk ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
                 }));
@@ -2460,7 +2471,7 @@ namespace LosaTermVoip
             // Cattura eccezioni non gestite nei thread di background — evita crash totale
             AppDomain.CurrentDomain.UnhandledException += (s, e) => {
                 try {
-                    string msg = e.ExceptionObject != null ? e.ExceptionObject.ToString() : "Errore sconosciuto";
+                    string msg = e.ExceptionObject != null ? e.ExceptionObject.ToString() : L.B("Errore sconosciuto","Unknown error");
                     File.AppendAllText(
                         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                             "LosaTermVoip", "crash.log"),

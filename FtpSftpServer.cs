@@ -58,7 +58,7 @@ namespace LosaTermVoip
             listenThread = new Thread(AcceptLoop) { IsBackground = true, Name = "FtpAccept" };
             listenThread.Start();
 
-            Log("FTP server avviato su porta " + port + " — root: " + rootDir);
+            Log(L.B("FTP server avviato su porta ","FTP server started on port ") + port + " — root: " + rootDir);
         }
 
         public void Stop()
@@ -66,7 +66,7 @@ namespace LosaTermVoip
             if (!running) return;
             running = false;
             try { listener.Stop(); } catch { }
-            Log("FTP server fermato.");
+            Log(L.B("FTP server fermato.","FTP server stopped."));
         }
 
         // ── Loop accettazione ─────────────────────────────────────────────────
@@ -81,7 +81,7 @@ namespace LosaTermVoip
                     if (ClientConn != null) ClientConn(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
                     ThreadPool.QueueUserWorkItem(_ => HandleSession(client));
                 }
-                catch { if (running) Log("Errore accept."); }
+                catch { if (running) Log(L.B("Errore accept.","Accept error.")); }
             }
         }
 
@@ -122,15 +122,15 @@ namespace LosaTermVoip
                             if (AllowAnonymous && (arg.ToLower() == "anonymous" || arg.ToLower() == "ftp"))
                             { authenticated = true; Send(writer, "230 Login anonimo OK."); }
                             else
-                                Send(writer, "331 Password richiesta per " + arg);
+                                Send(writer, "331 Password required for " + arg);
                             break;
 
                         case "PASS":
-                            if (authenticated) { Send(writer, "230 Già autenticato."); break; }
+                            if (authenticated) { Send(writer, "230 Already authenticated."); break; }
                             if (pendingUser == Username && arg == password)
-                            { authenticated = true; Send(writer, "230 Login corretto."); }
+                            { authenticated = true; Send(writer, "230 Login successful."); }
                             else
-                                Send(writer, "530 Login non corretto.");
+                                Send(writer, "530 Login incorrect.");
                             break;
 
                         case "QUIT":
@@ -156,7 +156,7 @@ namespace LosaTermVoip
                         case "PWD":
                         case "XPWD":
                             if (!CheckAuth(writer, authenticated)) break;
-                            Send(writer, "257 \"" + cwd + "\" è la directory corrente.");
+                            Send(writer, "257 \"" + cwd + "\" is the current directory.");
                             break;
 
                         case "CWD":
@@ -168,7 +168,7 @@ namespace LosaTermVoip
                                 if (Directory.Exists(physNew))
                                 { cwd = newPath; Send(writer, "250 Directory cambiata in " + cwd); }
                                 else
-                                    Send(writer, "550 Directory non trovata: " + arg);
+                                    Send(writer, "550 Directory not found: " + arg);
                             }
                             break;
 
@@ -230,7 +230,7 @@ namespace LosaTermVoip
                                     data.Close();
                                     Send(writer, "226 Transfer OK.");
                                 }
-                                catch (Exception ex) { data.Close(); Send(writer, "550 Errore: " + ex.Message); }
+                                catch (Exception ex) { data.Close(); Send(writer, "550 Error: " + ex.Message); }
                             }
                             break;
 
@@ -238,7 +238,7 @@ namespace LosaTermVoip
                             if (!CheckAuth(writer, authenticated)) break;
                             {
                                 string filePath = PhysPath(RootDir, ResolvePath(cwd, arg));
-                                if (!File.Exists(filePath)) { Send(writer, "550 File non trovato."); break; }
+                                if (!File.Exists(filePath)) { Send(writer, "550 File not found."); break; }
                                 var data = OpenDataConn(writer, pasvListener);
                                 if (data == null) break;
                                 Send(writer, "150 Apertura connessione dati per " + arg);
@@ -247,10 +247,10 @@ namespace LosaTermVoip
                                     using (var fs = File.OpenRead(filePath))
                                         fs.CopyTo(data);
                                     data.Close();
-                                    Send(writer, "226 Transfer completato.");
+                                    Send(writer, "226 Transfer complete.");
                                     Log("RETR " + arg + " (" + new FileInfo(filePath).Length + " byte)");
                                 }
-                                catch (Exception ex) { data.Close(); Send(writer, "550 Errore: " + ex.Message); }
+                                catch (Exception ex) { data.Close(); Send(writer, "550 Error: " + ex.Message); }
                             }
                             break;
 
@@ -267,10 +267,10 @@ namespace LosaTermVoip
                                     using (var fs = File.Create(filePath))
                                         data.CopyTo(fs);
                                     data.Close();
-                                    Send(writer, "226 Upload completato.");
+                                    Send(writer, "226 Upload complete.");
                                     Log("STOR " + arg + " (" + new FileInfo(filePath).Length + " byte)");
                                 }
-                                catch (Exception ex) { data.Close(); Send(writer, "550 Errore: " + ex.Message); }
+                                catch (Exception ex) { data.Close(); Send(writer, "550 Error: " + ex.Message); }
                             }
                             break;
 
@@ -280,7 +280,7 @@ namespace LosaTermVoip
                             {
                                 string fp = PhysPath(RootDir, ResolvePath(cwd, arg));
                                 if (File.Exists(fp)) { File.Delete(fp); Send(writer, "250 File eliminato."); }
-                                else Send(writer, "550 File non trovato.");
+                                else Send(writer, "550 File not found.");
                             }
                             break;
 
@@ -302,7 +302,7 @@ namespace LosaTermVoip
                             {
                                 string dp = PhysPath(RootDir, ResolvePath(cwd, arg));
                                 if (Directory.Exists(dp)) { Directory.Delete(dp, recursive: false); Send(writer, "250 Directory eliminata."); }
-                                else Send(writer, "550 Directory non trovata.");
+                                else Send(writer, "550 Directory not found.");
                             }
                             break;
 
@@ -310,7 +310,7 @@ namespace LosaTermVoip
                             if (!CheckAuth(writer, authenticated)) break;
                             if (ReadOnly) { Send(writer, "550 Server in sola lettura."); break; }
                             renameFrom = PhysPath(RootDir, ResolvePath(cwd, arg));
-                            Send(writer, "350 File sorgente OK, inserire RNTO.");
+                            Send(writer, "350 Source file OK, send RNTO.");
                             break;
 
                         case "RNTO":
@@ -320,7 +320,7 @@ namespace LosaTermVoip
                                 string renameTo = PhysPath(RootDir, ResolvePath(cwd, arg));
                                 if (File.Exists(renameFrom)) { File.Move(renameFrom, renameTo); Send(writer, "250 Rinominato."); }
                                 else if (Directory.Exists(renameFrom)) { Directory.Move(renameFrom, renameTo); Send(writer, "250 Rinominato."); }
-                                else Send(writer, "550 Sorgente non trovata.");
+                                else Send(writer, "550 Source not found.");
                                 renameFrom = null;
                             }
                             break;
@@ -330,7 +330,7 @@ namespace LosaTermVoip
                             {
                                 string fp = PhysPath(RootDir, ResolvePath(cwd, arg));
                                 if (File.Exists(fp)) Send(writer, "213 " + new FileInfo(fp).Length);
-                                else Send(writer, "550 File non trovato.");
+                                else Send(writer, "550 File not found.");
                             }
                             break;
 
@@ -343,7 +343,7 @@ namespace LosaTermVoip
                             break;
 
                         default:
-                            Send(writer, "502 Comando non implementato: " + cmd);
+                            Send(writer, "502 Command not implemented: " + cmd);
                             break;
                     }
                 }
@@ -381,7 +381,7 @@ namespace LosaTermVoip
                 pasvListener.Stop();
                 return dc.GetStream();
             }
-            catch { Send(writer, "425 Impossibile aprire connessione dati."); return null; }
+            catch { Send(writer, "425 Cannot open data connection."); return null; }
         }
 
         // Risolve path FTP relativo → path FTP assoluto
@@ -502,7 +502,7 @@ namespace LosaTermVoip
             BuildUI();
 
             ftpServer.LogLine   += msg => SafeLog(lbFtpLog, msg);
-            ftpServer.ClientConn += ip => SafeLog(lbFtpLog, ">>> Client connesso: " + ip);
+            ftpServer.ClientConn += ip => SafeLog(lbFtpLog, L.B(">>> Client connesso: ",">>> Client connected: ") + ip);
             tftpServer.LogLine  += msg => SafeLog(lbTftpLog, msg);
             dhcpServer.LogLine  += msg => SafeLog(lbDhcpLog, msg);
 
@@ -607,9 +607,9 @@ namespace LosaTermVoip
         void BtnFtpStart_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtFtpRoot.Text))
-            { MessageBox.Show("Inserire la cartella root FTP.", "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            { MessageBox.Show(L.B("Inserire la cartella root FTP.","Enter the FTP root folder."), "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (!chkFtpAnon.Checked && string.IsNullOrWhiteSpace(txtFtpUser.Text))
-            { MessageBox.Show("Inserire un nome utente FTP.", "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            { MessageBox.Show(L.B("Inserire un nome utente FTP.","Enter an FTP username."), "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             try
             {
@@ -621,7 +621,7 @@ namespace LosaTermVoip
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Impossibile avviare FTP server:\n" + ex.Message, "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(L.B("Impossibile avviare FTP server:\n","Cannot start FTP server:\n") + ex.Message, "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -686,7 +686,7 @@ namespace LosaTermVoip
         {
             int port; if (!int.TryParse(txtTftpPort.Text.Trim(), out port)) port = 69;
             if (string.IsNullOrWhiteSpace(txtTftpRoot.Text))
-            { MessageBox.Show("Inserire la cartella root TFTP.", "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            { MessageBox.Show(L.B("Inserire la cartella root TFTP.","Enter the TFTP root folder."), "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             try
             {
                 tftpServer.Start(port, txtTftpRoot.Text);
@@ -696,8 +696,8 @@ namespace LosaTermVoip
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Impossibile avviare il TFTP su UDP/" + port + ":\n" + ex.Message +
-                    "\n\nLe porte <1024 (come la 69) richiedono privilegi: avvia l'app come amministratore, oppure usa la 6969.",
+                MessageBox.Show(L.B("Impossibile avviare il TFTP su UDP/","Cannot start TFTP on UDP/") + port + ":\n" + ex.Message +
+                    L.B("\n\nLe porte <1024 (come la 69) richiedono privilegi: avvia l'app come amministratore, oppure usa la 6969.","\n\nPorts <1024 (like 69) require privileges: run the app as administrator, or use 6969."),
                     "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
@@ -712,13 +712,13 @@ namespace LosaTermVoip
 
             // Banner rosso fisso
             cfg.Controls.Add(new Label {
-                Text = "  ⚠  DHCP LAB — solo reti di laboratorio isolate, MAI in produzione!",
+                Text = L.B("  ⚠  DHCP LAB — solo reti di laboratorio isolate, MAI in produzione!","  ⚠  DHCP LAB — isolated lab networks only, NEVER in production!"),
                 Location = new Point(8, 6), Width = 660, Height = 26,
                 BackColor = Color.FromArgb(120,20,20), ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9, FontStyle.Bold), TextAlign = ContentAlignment.MiddleLeft });
 
             int y = 42;
-            cfg.Controls.Add(DLbl("Interfaccia:", 12, y+2));
+            cfg.Controls.Add(DLbl(L.B("Interfaccia:","Interface:"), 12, y+2));
             cmbDhcpIf = new ComboBox { Location = new Point(126, y-2), Width = 240, DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.FromArgb(45,55,80), ForeColor = Color.White };
             cfg.Controls.Add(cmbDhcpIf);
@@ -748,10 +748,10 @@ namespace LosaTermVoip
             txtDhcpLease = DarkTextBox(126, y-2, 70); txtDhcpLease.Text = "3600"; cfg.Controls.Add(txtDhcpLease);
 
             y += 36;
-            btnDhcpStart = DarkButton("▶ Avvia DHCP (conferma)", 12, y, 200, Color.FromArgb(120,70,20));
+            btnDhcpStart = DarkButton(L.B("▶ Avvia DHCP (conferma)","▶ Start DHCP (confirm)"), 12, y, 200, Color.FromArgb(120,70,20));
             btnDhcpStart.Click += BtnDhcpStart_Click;
             cfg.Controls.Add(btnDhcpStart);
-            btnDhcpStop = DarkButton("■ Ferma", 220, y, 90, Color.FromArgb(120,30,30));
+            btnDhcpStop = DarkButton(L.B("■ Ferma","■ Stop"), 220, y, 90, Color.FromArgb(120,30,30));
             btnDhcpStop.Enabled = false;
             btnDhcpStop.Click += (s,e) => {
                 dhcpServer.Stop();
@@ -812,15 +812,19 @@ namespace LosaTermVoip
 
         void BtnDhcpStart_Click(object sender, EventArgs e)
         {
-            if (cmbDhcpIf.SelectedItem == null) { MessageBox.Show("Seleziona l'interfaccia di rete.", "DHCP"); return; }
+            if (cmbDhcpIf.SelectedItem == null) { MessageBox.Show(L.B("Seleziona l'interfaccia di rete.","Select the network interface."), "DHCP"); return; }
             string localIp = ((string)cmbDhcpIf.SelectedItem).Split(new[] { " / " }, StringSplitOptions.None)[0];
 
             if (MessageBox.Show(
-                "⚠ ATTENZIONE — stai per avviare un SERVER DHCP su " + localIp + ".\n\n" +
+                L.B("⚠ ATTENZIONE — stai per avviare un SERVER DHCP su " + localIp + ".\n\n" +
                 "Un DHCP non autorizzato su una rete di PRODUZIONE può causare GRAVI disservizi " +
                 "(IP errati, conflitti, down della LAN, telefoni che non registrano).\n\n" +
                 "Usalo SOLO su una rete di laboratorio ISOLATA.\n\nVuoi davvero avviarlo?",
-                "DHCP LAB — conferma pericolo", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                "⚠ WARNING — you are about to start a DHCP SERVER on " + localIp + ".\n\n" +
+                "A rogue DHCP on a PRODUCTION network can cause SEVERE outages " +
+                "(wrong IPs, conflicts, LAN down, phones failing to register).\n\n" +
+                "Use it ONLY on an ISOLATED lab network.\n\nDo you really want to start it?"),
+                L.B("DHCP LAB — conferma pericolo","DHCP LAB — confirm danger"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
                 MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
 
             int lease; if (!int.TryParse(txtDhcpLease.Text.Trim(), out lease) || lease < 60) lease = 3600;
@@ -829,12 +833,12 @@ namespace LosaTermVoip
                 dhcpServer.Start(localIp, txtDhcpStart.Text.Trim(), txtDhcpEnd.Text.Trim(), txtDhcpMask.Text.Trim(),
                     txtDhcpGw.Text.Trim(), txtDhcpDns.Text.Trim(), txtDhcpTftp.Text.Trim(), lease);
                 btnDhcpStart.Enabled = false; btnDhcpStop.Enabled = true;
-                lblDhcpStatus.Text = "● ATTIVO (LAB)"; lblDhcpStatus.ForeColor = Color.OrangeRed;
+                lblDhcpStatus.Text = L.B("● ATTIVO (LAB)","● ACTIVE (LAB)"); lblDhcpStatus.ForeColor = Color.OrangeRed;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Impossibile avviare il DHCP (UDP/67):\n" + ex.Message +
-                    "\n\nLa porta 67 richiede privilegi: avvia l'app come amministratore, e assicurati che nessun altro DHCP usi la 67.",
+                MessageBox.Show(L.B("Impossibile avviare il DHCP (UDP/67):\n","Cannot start DHCP (UDP/67):\n") + ex.Message +
+                    L.B("\n\nLa porta 67 richiede privilegi: avvia l'app come amministratore, e assicurati che nessun altro DHCP usi la 67.","\n\nPort 67 requires privileges: run the app as administrator, and make sure no other DHCP is using port 67."),
                     "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
@@ -887,9 +891,9 @@ namespace LosaTermVoip
             string winUser = Environment.UserDomainName + "\\" + Environment.UserName;
             string homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             y += 22; AddLabel(info, "Host: " + GetLocalIp() + "      Porta: 22", 12, y, Color.Gainsboro);
-            y += 18; AddLabel(info, "Utente: " + winUser + "   (il tuo account Windows — oppure creane uno dedicato sotto)", 12, y, Color.Gainsboro);
-            y += 18; AddLabel(info, "Password: la password Windows di quell'account", 12, y, Color.Gainsboro);
-            y += 18; AddLabel(info, "Cartella iniziale: " + homeDir, 12, y, Color.Gainsboro);
+            y += 18; AddLabel(info, L.B("Utente: ","User: ") + winUser + L.B("   (il tuo account Windows — oppure creane uno dedicato sotto)","   (your Windows account — or create a dedicated one below)"), 12, y, Color.Gainsboro);
+            y += 18; AddLabel(info, L.B("Password: la password Windows di quell'account","Password: the Windows password of that account"), 12, y, Color.Gainsboro);
+            y += 18; AddLabel(info, L.B("Cartella iniziale: ","Home folder: ") + homeDir, 12, y, Color.Gainsboro);
 
             // ── Condivisione di una cartella specifica ────────────────────────────
             y += 24;
@@ -930,13 +934,13 @@ namespace LosaTermVoip
             var chkShowPass = new CheckBox { Text=L.T("sftp.show"), Location=new Point(330, y+2), AutoSize=true, ForeColor=Color.Gray };
             chkShowPass.CheckedChanged += (s,e) => txtNewPass.PasswordChar = chkShowPass.Checked ? '\0' : '●';
             info.Controls.Add(chkShowPass);
-            var btnGenPw = DarkButton("🎲 Genera", 410, y - 1, 110, Color.FromArgb(55, 55, 85));
+            var btnGenPw = DarkButton(L.B("🎲 Genera","🎲 Generate"), 410, y - 1, 110, Color.FromArgb(55, 55, 85));
             btnGenPw.Click += (s, e) => {
                 string pw = GenStrongPw();
                 txtNewPass.Text = pw; txtNewPass.PasswordChar = '\0'; chkShowPass.Checked = true;
                 try { Clipboard.SetText(pw); } catch { }
-                AppendSshLog("🎲 Password generata e copiata negli appunti: " + pw);
-                AppendSshLog("   Salvala: ti servirà sul CUCM (o nel client SFTP).");
+                AppendSshLog(L.B("🎲 Password generata e copiata negli appunti: ","🎲 Password generated and copied to clipboard: ") + pw);
+                AppendSshLog(L.B("   Salvala: ti servirà sul CUCM (o nel client SFTP).","   Save it: you'll need it on the CUCM (or in the SFTP client)."));
             };
             info.Controls.Add(btnGenPw);
             info.Controls.Add(new Label {
@@ -947,7 +951,7 @@ namespace LosaTermVoip
             btnCreateUser = DarkButton(L.T("sftp.create_user"), 12, y, 200, Color.FromArgb(30,100,30));
             btnCreateUser.Click += (s,e) => CreateSftpUser(txtNewUser.Text, txtNewPass.Text);
             info.Controls.Add(btnCreateUser);
-            var btnRemoveUser = DarkButton("🗑 Rimuovi utente", 220, y, 160, Color.FromArgb(120,30,30));
+            var btnRemoveUser = DarkButton(L.B("🗑 Rimuovi utente","🗑 Remove user"), 220, y, 160, Color.FromArgb(120,30,30));
             btnRemoveUser.Click += (s,e) => RemoveSftpUser(txtNewUser.Text);
             info.Controls.Add(btnRemoveUser);
             y += 30;
@@ -977,7 +981,7 @@ namespace LosaTermVoip
         void RefreshSshStatus()
         {
             // mostra subito un placeholder
-            lblSshStatus.Text = "⏳ Verifica OpenSSH…"; lblSshStatus.ForeColor = Color.Gray;
+            lblSshStatus.Text = L.B("⏳ Verifica OpenSSH…","⏳ Checking OpenSSH…"); lblSshStatus.ForeColor = Color.Gray;
             // PowerShell (Get-WindowsCapability -Online è lento) → thread di background,
             // poi aggiorno la UI solo se la finestra ha già un handle valido.
             ThreadPool.QueueUserWorkItem(_ =>
@@ -993,7 +997,7 @@ namespace LosaTermVoip
                     {
                         if (installed != null && installed.Contains("Installed"))
                         {
-                            lblSshStatus.Text      = "✔ OpenSSH installato, servizio non trovato";
+                            lblSshStatus.Text      = L.B("✔ OpenSSH installato, servizio non trovato","✔ OpenSSH installed, service not found");
                             lblSshStatus.ForeColor = Color.Yellow;
                             btnSshInstall.Enabled  = false;
                         }
@@ -1007,7 +1011,7 @@ namespace LosaTermVoip
                     }
                     else if (status.Trim().ToLower() == "running")
                     {
-                        lblSshStatus.Text      = "▶ OpenSSH Server attivo (porta 22)";
+                        lblSshStatus.Text      = L.B("▶ OpenSSH Server attivo (porta 22)","▶ OpenSSH Server active (port 22)");
                         lblSshStatus.ForeColor = Color.LimeGreen;
                         btnSshInstall.Enabled  = false;
                         btnSshStart.Enabled    = false;
@@ -1030,22 +1034,28 @@ namespace LosaTermVoip
         void BtnSshInstall_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show(
-                "Installare OpenSSH Server (funzionalità opzionale di Windows)?\n\n" +
+                L.B("Installare OpenSSH Server (funzionalità opzionale di Windows)?\n\n" +
                 "• Richiede privilegi di amministratore (apparirà il prompt UAC).\n" +
                 "• Scarica da Windows Update: può richiedere ALCUNI MINUTI.\n" +
                 "• Si aprirà una finestra PowerShell: NON chiuderla finché non finisce.\n\n" +
                 "Se l'azienda blocca Windows Update, l'installazione potrebbe non riuscire:\n" +
                 "in quel caso installa OpenSSH da Impostazioni › App › Funzionalità facoltative.",
-                "LosaTermVoip — Installa OpenSSH",
+                "Install OpenSSH Server (optional Windows feature)?\n\n" +
+                "• Requires administrator privileges (a UAC prompt will appear).\n" +
+                "• Downloads from Windows Update: may take SEVERAL MINUTES.\n" +
+                "• A PowerShell window will open: do NOT close it until it finishes.\n\n" +
+                "If your company blocks Windows Update, the install may fail:\n" +
+                "in that case install OpenSSH from Settings › Apps › Optional features."),
+                L.B("LosaTermVoip — Installa OpenSSH","LosaTermVoip — Install OpenSSH"),
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
-            AppendSshLog("⏳ Installazione OpenSSH Server… (può richiedere alcuni minuti, non chiudere la finestra PowerShell)");
+            AppendSshLog(L.B("⏳ Installazione OpenSSH Server… (può richiedere alcuni minuti, non chiudere la finestra PowerShell)","⏳ Installing OpenSSH Server… (may take a few minutes, don't close the PowerShell window)"));
             btnSshInstall.Enabled = false;
             ThreadPool.QueueUserWorkItem(_ => {
                 // feedback testuale nella finestra elevata invece dello spinner che sembra bloccato
                 string cmd =
                     "$ProgressPreference='SilentlyContinue'; " +
-                    "Write-Host 'Installazione OpenSSH Server in corso...'; " +
+                    "Write-Host 'Installing OpenSSH Server...'; " +
                     "Write-Host 'Scarico da Windows Update, puo'' richiedere alcuni minuti. NON chiudere.'; " +
                     "Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0 | Out-Null; " +
                     "Write-Host 'Installazione completata.'; Start-Sleep -Seconds 4";
@@ -1062,7 +1072,7 @@ namespace LosaTermVoip
         {
             AppendSshLog("▶ Avvio servizio sshd...");
             string res = RunPsCommandAdmin("Start-Service sshd");
-            AppendSshLog(res.Length > 0 ? res : "Servizio avviato.");
+            AppendSshLog(res.Length > 0 ? res : L.B("Servizio avviato.","Service started."));
             RefreshSshStatus();
         }
 
@@ -1070,7 +1080,7 @@ namespace LosaTermVoip
         {
             AppendSshLog("■ Stop servizio sshd...");
             string res = RunPsCommandAdmin("Stop-Service sshd");
-            AppendSshLog(res.Length > 0 ? res : "Servizio fermato.");
+            AppendSshLog(res.Length > 0 ? res : L.B("Servizio fermato.","Service stopped."));
             RefreshSshStatus();
         }
 
@@ -1078,7 +1088,7 @@ namespace LosaTermVoip
         {
             AppendSshLog("⚙ Imposto sshd su Automatic...");
             string res = RunPsCommandAdmin("Set-Service sshd -StartupType Automatic; Start-Service sshd");
-            AppendSshLog(res.Length > 0 ? res : "Servizio impostato su Automatic e avviato.");
+            AppendSshLog(res.Length > 0 ? res : L.B("Servizio impostato su Automatic e avviato.","Service set to Automatic and started."));
             RefreshSshStatus();
         }
 
@@ -1088,7 +1098,7 @@ namespace LosaTermVoip
         void CreateSftpShare(string target, string homeDir)
         {
             if (string.IsNullOrWhiteSpace(target) || !Directory.Exists(target))
-            { AppendSshLog("✗ Seleziona prima una cartella valida da condividere."); return; }
+            { AppendSshLog(L.B("✗ Seleziona prima una cartella valida da condividere.","✗ Select a valid folder to share first.")); return; }
 
             string name = Path.GetFileName(target.TrimEnd('\\', '/'));
             if (string.IsNullOrEmpty(name)) name = "Condivisa";
@@ -1096,7 +1106,7 @@ namespace LosaTermVoip
 
             if (Directory.Exists(link) || File.Exists(link))
             {
-                AppendSshLog("ℹ La scorciatoia esiste già: " + link);
+                AppendSshLog(L.B("ℹ La scorciatoia esiste già: ","ℹ The shortcut already exists: ") + link);
                 try { Process.Start("explorer.exe", homeDir); } catch { }
                 return;
             }
@@ -1110,12 +1120,12 @@ namespace LosaTermVoip
                 if (Directory.Exists(link))
                 {
                     AppendSshLog("✔ Scorciatoia creata: " + link);
-                    AppendSshLog("   I client SFTP la vedranno come cartella \"SFTP_" + name + "\" entrando nella home.");
+                    AppendSshLog(L.B("   I client SFTP la vedranno come cartella \"SFTP_","   SFTP clients will see it as folder \"SFTP_") + name + L.B("\" entrando nella home.","\" when entering the home."));
                 }
                 else
-                    AppendSshLog("✗ Impossibile creare la scorciatoia: " + o);
+                    AppendSshLog(L.B("✗ Impossibile creare la scorciatoia: ","✗ Cannot create the shortcut: ") + o);
             }
-            catch (Exception ex) { AppendSshLog("✗ Errore: " + ex.Message); }
+            catch (Exception ex) { AppendSshLog(L.B("✗ Errore: ","✗ Error: ") + ex.Message); }
         }
 
         // Crea (o aggiorna la password di) un account Windows locale dedicato all'SFTP.
@@ -1123,15 +1133,15 @@ namespace LosaTermVoip
         {
             user = (user ?? "").Trim();
             pass = pass ?? "";
-            if (user.Length == 0) { AppendSshLog("✗ Inserisci un username."); return; }
+            if (user.Length == 0) { AppendSshLog(L.B("✗ Inserisci un username.","✗ Enter a username.")); return; }
             if (user.IndexOfAny(new[] { ' ', '\\', '/', '"', '\'', '[', ']' }) >= 0)
-            { AppendSshLog("✗ Username non valido (niente spazi o \\ / \" ' [ ])."); return; }
+            { AppendSshLog(L.B("✗ Username non valido (niente spazi o \\ / \" ' [ ]).","✗ Invalid username (no spaces or \\ / \" ' [ ]).")); return; }
             if (pass.Length < 8)
-            { AppendSshLog("✗ Password troppo corta: usa almeno 8 caratteri con maiuscole, minuscole e numeri (criteri di Windows)."); return; }
+            { AppendSshLog(L.B("✗ Password troppo corta: usa almeno 8 caratteri con maiuscole, minuscole e numeri (criteri di Windows).","✗ Password too short: use at least 8 characters with uppercase, lowercase and numbers (Windows policy).")); return; }
             if (!HasComplexity(pass))
-            { AppendSshLog("✗ Password troppo debole per la policy del dominio: servono almeno 3 categorie tra MAIUSCOLE, minuscole, numeri e simboli. Premi 🎲 Genera per una conforme."); return; }
+            { AppendSshLog(L.B("✗ Password troppo debole per la policy del dominio: servono almeno 3 categorie tra MAIUSCOLE, minuscole, numeri e simboli. Premi 🎲 Genera per una conforme.","✗ Password too weak for the domain policy: at least 3 of UPPERCASE, lowercase, numbers and symbols are required. Press 🎲 Generate for a compliant one.")); return; }
 
-            AppendSshLog("⏳ Creo/aggiorno l'utente SFTP '" + user + "' (apparirà il prompt UAC)...");
+            AppendSshLog(L.B("⏳ Creo/aggiorno l'utente SFTP '","⏳ Creating/updating SFTP user '") + user + L.B("' (apparirà il prompt UAC)...","' (a UAC prompt will appear)..."));
             btnCreateUser.Enabled = false;
             string u = user.Replace("'", "''");
             string p = pass.Replace("'", "''");
@@ -1149,10 +1159,10 @@ namespace LosaTermVoip
                 BeginInvoke((Action)(() => {
                     if (res == "OK")
                     {
-                        AppendSshLog("✔ Utente SFTP pronto: '" + user + "'.");
-                        AppendSshLog("   ⓘ L'account è in Windows. La cartella C:\\Users\\" + user + " comparirà al PRIMO collegamento (è normale che ora non ci sia).");
-                        AppendSshLog("   Collegati così:  sftp " + user + "@" + GetLocalIp());
-                        AppendSshLog("   (assicurati che il servizio SSH sia avviato qui sopra)");
+                        AppendSshLog(L.B("✔ Utente SFTP pronto: '","✔ SFTP user ready: '") + user + "'.");
+                        AppendSshLog(L.B("   ⓘ L'account è in Windows. La cartella C:\\Users\\","   ⓘ The account is in Windows. The folder C:\\Users\\") + user + L.B(" comparirà al PRIMO collegamento (è normale che ora non ci sia)."," will appear on the FIRST login (it's normal it isn't there yet)."));
+                        AppendSshLog(L.B("   Collegati così:  sftp ","   Connect like this:  sftp ") + user + "@" + GetLocalIp());
+                        AppendSshLog(L.B("   (assicurati che il servizio SSH sia avviato qui sopra)","   (make sure the SSH service is started above)"));
                     }
                     else AppendSshLog("✗ " + res);
                     btnCreateUser.Enabled = true;
@@ -1164,16 +1174,16 @@ namespace LosaTermVoip
         void RemoveSftpUser(string user)
         {
             user = (user ?? "").Trim();
-            if (user.Length == 0) { AppendSshLog("✗ Inserisci l'username da rimuovere."); return; }
-            if (MessageBox.Show("Rimuovere l'account Windows locale '" + user + "'?\n\n" +
-                "L'account e il suo profilo non saranno più utilizzabili per l'SFTP.",
-                "LosaTermVoip — Rimuovi utente SFTP", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+            if (user.Length == 0) { AppendSshLog(L.B("✗ Inserisci l'username da rimuovere.","✗ Enter the username to remove.")); return; }
+            if (MessageBox.Show(L.B("Rimuovere l'account Windows locale '","Remove the local Windows account '") + user + L.B("'?\n\n","'?\n\n") +
+                L.B("L'account e il suo profilo non saranno più utilizzabili per l'SFTP.","The account and its profile will no longer be usable for SFTP."),
+                L.B("LosaTermVoip — Rimuovi utente SFTP","LosaTermVoip — Remove SFTP user"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
 
-            AppendSshLog("⏳ Rimuovo l'utente '" + user + "'...");
+            AppendSshLog(L.B("⏳ Rimuovo l'utente '","⏳ Removing user '") + user + "'...");
             string u = user.Replace("'", "''");
             ThreadPool.QueueUserWorkItem(_ => {
                 string res = RunPsCommandAdmin("Remove-LocalUser -Name '" + u + "'", 30000);
-                BeginInvoke((Action)(() => AppendSshLog(res == "OK" ? "✔ Utente '" + user + "' rimosso." : "✗ " + res)));
+                BeginInvoke((Action)(() => AppendSshLog(res == "OK" ? L.B("✔ Utente '","✔ User '") + user + L.B("' rimosso.","' removed.") : "✗ " + res)));
             });
         }
 
@@ -1194,7 +1204,7 @@ namespace LosaTermVoip
                 p.WaitForExit(15000);
                 return o;
             }
-            catch (Exception ex) { return "Errore: " + ex.Message; }
+            catch (Exception ex) { return L.B("Errore: ","Error: ") + ex.Message; }
         }
 
         static string RunPsCommandAdmin(string cmd, int timeoutMs = 30000)
@@ -1240,7 +1250,7 @@ namespace LosaTermVoip
                     return result == "OK" ? "OK" : result;   // gli ERR: vengono mostrati
                 return "Operazione non confermata (prompt UAC annullato o timeout). Riprova e approva l'UAC.";
             }
-            catch (Exception ex) { return "Errore (serve Amministratore?): " + ex.Message; }
+            catch (Exception ex) { return L.B("Errore (serve Amministratore?): ","Error (Administrator needed?): ") + ex.Message; }
         }
 
         static string GetLocalIp()

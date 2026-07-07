@@ -120,14 +120,14 @@ namespace LosaTermVoip
                 BackColor=Color.FromArgb(45,55,80), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
             top.Controls.Add(cmbVersion);
 
-            top.Controls.Add(DL("Cerca:", 422, 8, 46));
+            top.Controls.Add(DL(L.B("Cerca:","Search:"), 422, 8, 46));
             txtSearch = new TextBox { Location = new Point(468,4), Width=220,
                 BackColor=Color.FromArgb(45,55,80), ForeColor=Color.White,
                 BorderStyle=BorderStyle.FixedSingle };
             txtSearch.KeyDown += (s,e) => { if(e.KeyCode==Keys.Enter) SearchDocs(); };
             top.Controls.Add(txtSearch);
 
-            var btnSearch = DB("🔍 Cerca", 696, 4, 90);
+            var btnSearch = DB(L.B("🔍 Cerca","🔍 Search"), 696, 4, 90);
             btnSearch.Click += (s,e) => SearchDocs();
             top.Controls.Add(btnSearch);
 
@@ -240,6 +240,7 @@ namespace LosaTermVoip
         // Tab 1: SIP Simulator
         TextBox txtSipDst, txtSipFrom, txtSipTo, txtSipProxy, txtSipOutput;
         TextBox txtSipPort;
+        TextBox txtSipUser, txtSipPass;
         ComboBox cmbSipMethod;
         Button btnSipSend;
         // Tab 2: Cause Code Translator
@@ -276,7 +277,7 @@ namespace LosaTermVoip
             var page = new TabPage("📤  SIP Simulator") {
                 BackColor=Color.FromArgb(22,22,32), ForeColor=Color.White, Padding=new Padding(8) };
 
-            var cfg = new Panel { Dock=DockStyle.Top, Height=230,
+            var cfg = new Panel { Dock=DockStyle.Top, Height=272,
                 BackColor=Color.FromArgb(28,35,55), Padding=new Padding(12) };
 
             int y=10;
@@ -315,6 +316,15 @@ namespace LosaTermVoip
                 "INVITE","OPTIONS","REGISTER","SUBSCRIBE","NOTIFY","BYE","CANCEL","INFO","MESSAGE"});
             cmbSipMethod.SelectedIndex = 0;
             cfg.Controls.Add(cmbSipMethod);
+
+            y+=34;
+            cfg.Controls.Add(ML(L.B("Auth utente / pass:","Auth user / pass:"), 12, y));
+            txtSipUser = MT(140, y, 150); txtSipUser.Text = "";
+            cfg.Controls.Add(txtSipUser);
+            txtSipPass = MT(300, y, 130); txtSipPass.Text = ""; txtSipPass.UseSystemPasswordChar = true;
+            cfg.Controls.Add(txtSipPass);
+            cfg.Controls.Add(new Label { Text=L.B("(per challenge 401/407 Digest MD5)","(for 401/407 Digest MD5 challenge)"),
+                Location=new Point(440,y+2), Width=230, ForeColor=Color.Gray });
 
             y+=38;
             btnSipSend = new Button { Text=L.T("sim.send"),
@@ -358,11 +368,13 @@ namespace LosaTermVoip
             string from    = txtSipFrom.Text.Trim();
             string to      = txtSipTo.Text.Trim();
             string method  = cmbSipMethod.SelectedItem as string ?? "OPTIONS";
+            string user    = txtSipUser.Text.Trim();
+            string pass    = txtSipPass.Text;
             int    localPt;
             if (!int.TryParse(txtSipPort.Text.Trim(), out localPt) || localPt < 1 || localPt > 65535) localPt = 5060;
 
             if (string.IsNullOrEmpty(dst)) {
-                MessageBox.Show("Inserire indirizzo destinazione.", "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(L.B("Inserire indirizzo destinazione.","Enter a destination address."), "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -374,50 +386,55 @@ namespace LosaTermVoip
                 int.TryParse(parts[1], out dstPort);
             }
 
-            // Costruisce messaggio SIP
+            // Identificatori di dialog: restano costanti tra la richiesta iniziale e il retry con Digest
             string callId  = Guid.NewGuid().ToString("N").Substring(0,12) + "@" + GetLocalIp();
-            string branch  = "z9hG4bK" + Guid.NewGuid().ToString("N").Substring(0,8);
-            string cseq    = "1";
+            string fromTag = Guid.NewGuid().ToString("N").Substring(0,8);
             string localIp = GetLocalIp();
 
-            var sb = new StringBuilder();
-            sb.AppendLine(method + " " + to + " SIP/2.0");
-            sb.AppendLine("Via: SIP/2.0/UDP " + localIp + ":" + localPt + ";branch=" + branch);
-            sb.AppendLine("Max-Forwards: 70");
-            sb.AppendLine("From: <" + from + ">;tag=" + Guid.NewGuid().ToString("N").Substring(0,8));
-            sb.AppendLine("To: <" + to + ">");
-            sb.AppendLine("Call-ID: " + callId);
-            sb.AppendLine("CSeq: " + cseq + " " + method);
-            sb.AppendLine("Contact: <sip:" + localIp + ":" + localPt + ">");
-            sb.AppendLine("User-Agent: LosaTermVoip/1.0");
-            sb.AppendLine("Allow: INVITE,ACK,CANCEL,BYE,OPTIONS,NOTIFY,REGISTER,SUBSCRIBE,INFO");
-            sb.AppendLine("Content-Length: 0");
-            sb.AppendLine();
-
-            string sipMsg = sb.ToString();
-
-            // Log
-            string ts = DateTime.Now.ToString("HH:mm:ss.fff");
-            txtSipOutput.AppendText("─── [" + ts + "] SEND → " + dstHost + ":" + dstPort + " ───────────\r\n");
-            txtSipOutput.AppendText(sipMsg + "\r\n");
-
-            // Invia via UDP
             ThreadPool.QueueUserWorkItem(_ => {
                 try {
                     using (var udp = new UdpClient(localPt))
                     {
-                        byte[] data = Encoding.UTF8.GetBytes(sipMsg);
-                        udp.Send(data, data.Length, dstHost, dstPort);
-                        // Aspetta risposta max 5s
                         udp.Client.ReceiveTimeout = 5000;
-                        try {
-                            var ep = new IPEndPoint(IPAddress.Any, 0);
-                            byte[] resp = udp.Receive(ref ep);
-                            string respStr = Encoding.UTF8.GetString(resp);
-                            string rts = DateTime.Now.ToString("HH:mm:ss.fff");
-                            AppendOutput("─── [" + rts + "] RECV ← " + ep + " ────────────────\r\n" + respStr + "\r\n");
-                        } catch {
-                            AppendOutput("[" + DateTime.Now.ToString("HH:mm:ss") + "] ⚠ Nessuna risposta entro 5s\r\n");
+
+                        // ── Richiesta 1 (CSeq 1, senza auth) ──
+                        string branch1 = "z9hG4bK" + Guid.NewGuid().ToString("N").Substring(0,8);
+                        string msg1 = BuildSipMsg(method, to, from, localIp, localPt, callId, fromTag, branch1, 1, null, null);
+                        SendMsg(udp, dstHost, dstPort, msg1, "SEND → " + dstHost + ":" + dstPort);
+
+                        string resp1 = RecvResp(udp);
+                        if (resp1 == null) {
+                            AppendOutput("[" + Ts() + "] ⚠ " + L.B("Nessuna risposta entro 5s","No response within 5s") + "\r\n");
+                            return;
+                        }
+                        AppendOutput("─── [" + Ts() + "] RECV ← ────────────────\r\n" + resp1 + "\r\n");
+
+                        // ── Challenge Digest (401/407) → ricalcola e reinvia con CSeq 2 ──
+                        int code = StatusCode(resp1);
+                        if ((code == 401 || code == 407) && user.Length > 0)
+                        {
+                            bool proxy = (code == 407);
+                            string chHdr = HeaderValue(resp1, proxy ? "Proxy-Authenticate" : "WWW-Authenticate");
+                            string realm = Param(chHdr, "realm"), nonce = Param(chHdr, "nonce");
+                            if (nonce == null) {
+                                AppendOutput("[" + Ts() + "] ⚠ " + L.B("Challenge senza nonce: impossibile calcolare il Digest.","Challenge without nonce: cannot compute the Digest.") + "\r\n");
+                                return;
+                            }
+                            string qop = Param(chHdr, "qop"), opaque = Param(chHdr, "opaque");
+                            string authHdr  = BuildDigest(user, pass, realm ?? "", nonce, qop, opaque, to, method);
+                            string authName = proxy ? "Proxy-Authorization" : "Authorization";
+
+                            string branch2 = "z9hG4bK" + Guid.NewGuid().ToString("N").Substring(0,8);
+                            string msg2 = BuildSipMsg(method, to, from, localIp, localPt, callId, fromTag, branch2, 2, authHdr, authName);
+                            SendMsg(udp, dstHost, dstPort, msg2, L.B("SEND + Digest (CSeq 2) → ","SEND + Digest (CSeq 2) → ") + dstHost + ":" + dstPort);
+
+                            string resp2 = RecvResp(udp);
+                            if (resp2 != null) AppendOutput("─── [" + Ts() + "] RECV ← ────────────────\r\n" + resp2 + "\r\n");
+                            else               AppendOutput("[" + Ts() + "] ⚠ " + L.B("Nessuna risposta al Digest entro 5s","No response to the Digest within 5s") + "\r\n");
+                        }
+                        else if ((code == 401 || code == 407) && user.Length == 0)
+                        {
+                            AppendOutput("[" + Ts() + "] ℹ " + L.B("Il peer richiede autenticazione: compila utente/password e reinvia.","The peer requires authentication: fill in user/password and resend.") + "\r\n");
                         }
                     }
                 } catch (Exception ex) {
@@ -425,6 +442,82 @@ namespace LosaTermVoip
                 }
             });
         }
+
+        static string Ts() { return DateTime.Now.ToString("HH:mm:ss.fff"); }
+
+        void SendMsg(UdpClient udp, string host, int port, string msg, string banner)
+        {
+            AppendOutput("─── [" + Ts() + "] " + banner + " ───────────\r\n" + msg + "\r\n");
+            byte[] data = Encoding.UTF8.GetBytes(msg);
+            udp.Send(data, data.Length, host, port);
+        }
+
+        static string RecvResp(UdpClient udp)
+        {
+            try {
+                var ep = new IPEndPoint(IPAddress.Any, 0);
+                byte[] r = udp.Receive(ref ep);
+                return Encoding.UTF8.GetString(r);
+            } catch { return null; }
+        }
+
+        // Costruisce un messaggio SIP; Call-ID e From-tag restano costanti sul retry, il branch cambia.
+        static string BuildSipMsg(string method, string to, string from, string localIp, int localPt,
+                                  string callId, string fromTag, string branch, int cseq,
+                                  string authHeader, string authHeaderName)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(method + " " + to + " SIP/2.0");
+            sb.AppendLine("Via: SIP/2.0/UDP " + localIp + ":" + localPt + ";branch=" + branch);
+            sb.AppendLine("Max-Forwards: 70");
+            sb.AppendLine("From: <" + from + ">;tag=" + fromTag);
+            sb.AppendLine("To: <" + to + ">");
+            sb.AppendLine("Call-ID: " + callId);
+            sb.AppendLine("CSeq: " + cseq + " " + method);
+            sb.AppendLine("Contact: <sip:" + localIp + ":" + localPt + ">");
+            if (authHeader != null) sb.AppendLine(authHeaderName + ": " + authHeader);
+            sb.AppendLine("User-Agent: LosaTermVoip/1.0");
+            sb.AppendLine("Allow: INVITE,ACK,CANCEL,BYE,OPTIONS,NOTIFY,REGISTER,SUBSCRIBE,INFO");
+            sb.AppendLine("Content-Length: 0");
+            sb.AppendLine();
+            return sb.ToString();
+        }
+
+        // ── Digest MD5 (RFC 2617) — HA2 usa il METODO reale, così vale anche per INVITE ──
+        static string BuildDigest(string user, string pass, string realm, string nonce,
+                                  string qop, string opaque, string uri, string method)
+        {
+            string ha1 = Md5Hex(user + ":" + realm + ":" + pass);
+            string ha2 = Md5Hex(method + ":" + uri);
+            var sb = new StringBuilder();
+            sb.Append("Digest username=\"" + user + "\", realm=\"" + realm + "\", nonce=\"" + nonce + "\", uri=\"" + uri + "\"");
+            if (qop != null && qop.ToLower().Contains("auth"))
+            {
+                string nc = "00000001"; string cnonce = Guid.NewGuid().ToString("N").Substring(0,16);
+                string resp = Md5Hex(ha1 + ":" + nonce + ":" + nc + ":" + cnonce + ":auth:" + ha2);
+                sb.Append(", response=\"" + resp + "\", algorithm=MD5, qop=auth, nc=" + nc + ", cnonce=\"" + cnonce + "\"");
+            }
+            else
+            {
+                string resp = Md5Hex(ha1 + ":" + nonce + ":" + ha2);
+                sb.Append(", response=\"" + resp + "\", algorithm=MD5");
+            }
+            if (!string.IsNullOrEmpty(opaque)) sb.Append(", opaque=\"" + opaque + "\"");
+            return sb.ToString();
+        }
+
+        static string Md5Hex(string s)
+        {
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                byte[] h = md5.ComputeHash(Encoding.UTF8.GetBytes(s));
+                var sb = new StringBuilder(); foreach (var b in h) sb.Append(b.ToString("x2")); return sb.ToString();
+            }
+        }
+
+        static int    StatusCode(string s) { var m = Regex.Match(s ?? "", @"^SIP/2\.0\s+(\d{3})"); return m.Success ? int.Parse(m.Groups[1].Value) : 0; }
+        static string HeaderValue(string s, string name) { var m = Regex.Match(s ?? "", @"(?im)^" + Regex.Escape(name) + @"\s*:\s*(.+)$"); return m.Success ? m.Groups[1].Value.Trim() : ""; }
+        static string Param(string hdr, string key) { var m = Regex.Match(hdr ?? "", key + @"\s*=\s*""?([^"",]+)""?", RegexOptions.IgnoreCase); return m.Success ? m.Groups[1].Value.Trim() : null; }
 
         void AppendOutput(string s)
         {
@@ -448,13 +541,13 @@ namespace LosaTermVoip
             foreach (var row in VoipCodes.DebugCmds) cmb.Items.Add(row[0]);
             top.Controls.Add(cmb);
 
-            var btnCopy = new Button { Text="📋 Copia", Location=new Point(340,9), Width=90, Height=26,
+            var btnCopy = new Button { Text=L.B("📋 Copia","📋 Copy"), Location=new Point(340,9), Width=90, Height=26,
                 FlatStyle=FlatStyle.Flat, ForeColor=Color.White, BackColor=Color.FromArgb(50,70,110) };
             btnCopy.FlatAppearance.BorderSize=0;
             top.Controls.Add(btnCopy);
 
             var info = new Label { Dock=DockStyle.Bottom, Height=22, ForeColor=Color.Gray, TextAlign=ContentAlignment.MiddleLeft,
-                Text="  Comandi di debug/logging per vendor. ⚠ Alza i livelli solo per la diagnosi e riportali a default a fine analisi." };
+                Text=L.B("  Comandi di debug/logging per vendor. ⚠ Alza i livelli solo per la diagnosi e riportali a default a fine analisi.","  Vendor debug/logging commands. ⚠ Raise levels only for diagnosis and restore defaults when done.") };
 
             var txt = new TextBox { Dock=DockStyle.Fill, Multiline=true, ReadOnly=true,
                 ScrollBars=ScrollBars.Both, WordWrap=false, BackColor=Color.FromArgb(8,12,22),
@@ -478,12 +571,12 @@ namespace LosaTermVoip
             var pnl = new Panel { Dock=DockStyle.Top, Height=260,
                 BackColor=Color.FromArgb(28,35,55), Padding=new Padding(14) };
 
-            pnl.Controls.Add(new Label { Text="Traduci codice causa tra protocolli VoIP:",
+            pnl.Controls.Add(new Label { Text=L.B("Traduci codice causa tra protocolli VoIP:","Translate a cause code between VoIP protocols:"),
                 Location=new Point(14,12), Width=400, ForeColor=Color.LightCyan,
                 Font=new Font("Segoe UI",9,FontStyle.Bold) });
 
             int y=42;
-            pnl.Controls.Add(ML("Da protocollo:", 14, y));
+            pnl.Controls.Add(ML(L.B("Da protocollo:","From protocol:"), 14, y));
             cmbCauseFrom = new ComboBox { Location=new Point(130,y-2), Width=130,
                 DropDownStyle=ComboBoxStyle.DropDownList,
                 BackColor=Color.FromArgb(45,55,80), ForeColor=Color.White };
@@ -491,7 +584,7 @@ namespace LosaTermVoip
             cmbCauseFrom.SelectedIndex=0;
             pnl.Controls.Add(cmbCauseFrom);
 
-            pnl.Controls.Add(ML("A protocollo:", 280, y));
+            pnl.Controls.Add(ML(L.B("A protocollo:","To protocol:"), 280, y));
             cmbCauseTo = new ComboBox { Location=new Point(380,y-2), Width=130,
                 DropDownStyle=ComboBoxStyle.DropDownList,
                 BackColor=Color.FromArgb(45,55,80), ForeColor=Color.White };
@@ -500,12 +593,12 @@ namespace LosaTermVoip
             pnl.Controls.Add(cmbCauseTo);
 
             y+=38;
-            pnl.Controls.Add(ML("Codice input:", 14, y));
+            pnl.Controls.Add(ML(L.B("Codice input:","Input code:"), 14, y));
             txtCauseIn = MT(130, y, 100);
             txtCauseIn.Text="16";
             pnl.Controls.Add(txtCauseIn);
 
-            var btnTrans = new Button { Text="🔄 Traduci", Location=new Point(240,y-2),
+            var btnTrans = new Button { Text=L.B("🔄 Traduci","🔄 Translate"), Location=new Point(240,y-2),
                 Width=100, Height=26, FlatStyle=FlatStyle.Flat, ForeColor=Color.White,
                 BackColor=Color.FromArgb(30,80,150) };
             btnTrans.FlatAppearance.BorderSize=0;
@@ -513,7 +606,7 @@ namespace LosaTermVoip
             pnl.Controls.Add(btnTrans);
 
             y+=38;
-            pnl.Controls.Add(ML("Risultato:", 14, y));
+            pnl.Controls.Add(ML(L.B("Risultato:","Result:"), 14, y));
             txtCauseOut = new TextBox { Location=new Point(130,y-2), Width=460, Height=100,
                 Multiline=true, ReadOnly=true, ScrollBars=ScrollBars.Vertical,
                 BackColor=Color.FromArgb(8,12,22), ForeColor=Color.LimeGreen,
@@ -523,7 +616,7 @@ namespace LosaTermVoip
             page.Controls.Add(pnl);
 
             // Tabella di riferimento Q.850
-            var lblRef = new Label { Text="  📋 Tabella Q.850 / SIP rapida",
+            var lblRef = new Label { Text=L.B("  📋 Tabella Q.850 / SIP rapida","  📋 Quick Q.850 / SIP table"),
                 Dock=DockStyle.Top, Height=22, ForeColor=Color.LightGray,
                 BackColor=Color.FromArgb(30,30,45), Padding=new Padding(4,0,0,0),
                 TextAlign=ContentAlignment.MiddleLeft };
@@ -533,7 +626,7 @@ namespace LosaTermVoip
                 FullRowSelect=true, GridLines=true,
                 BackColor=Color.FromArgb(18,18,30), ForeColor=Color.White };
             lv.Columns.Add("Q.850", 60); lv.Columns.Add("SIP", 80);
-            lv.Columns.Add("Descrizione", 300); lv.Columns.Add("H.323 Reason", 140);
+            lv.Columns.Add(L.B("Descrizione","Description"), 300); lv.Columns.Add("H.323 Reason", 140);
             foreach (var row in CauseTable)
                 lv.Items.Add(new ListViewItem(row));
             page.Controls.Add(lv);
@@ -568,12 +661,12 @@ namespace LosaTermVoip
                 if (from == "SIP" && int.TryParse(code, out sipDirect) && VoipCodes.Sip.TryGetValue(sipDirect, out sd))
                 {
                     result.AppendLine("── SIP " + sipDirect + " " + sd[0] + " ──");
-                    result.AppendLine("Significato: " + sd[1]);
-                    result.AppendLine("Da controllare: " + sd[2]);
+                    result.AppendLine(L.B("Significato: ","Meaning: ") + sd[1]);
+                    result.AppendLine(L.B("Da controllare: ","What to check: ") + sd[2]);
                     txtCauseOut.Text = result.ToString();
                     return;
                 }
-                txtCauseOut.Text = "Codice non trovato."; return;
+                txtCauseOut.Text = L.B("Codice non trovato.","Code not found."); return;
             }
 
             // Cerca nella tabella
@@ -585,9 +678,9 @@ namespace LosaTermVoip
                 {
                     result.AppendLine("Q.850 Cause: " + row[0]);
                     result.AppendLine("SIP:         " + row[1]);
-                    result.AppendLine("Descrizione: " + row[2]);
+                    result.AppendLine(L.B("Descrizione: ","Description: ") + row[2]);
                     result.AppendLine("H.323:       " + (row.Length > 3 ? row[3] : "-"));
-                    if (to == "SIP") result.AppendLine("\n▶ RISPOSTA SIP: " + row[1]);
+                    if (to == "SIP") result.AppendLine("\n▶ " + L.B("RISPOSTA SIP: ","SIP RESPONSE: ") + row[1]);
                     else if (to == "Q.850") result.AppendLine("\n▶ Q.850 CAUSE: " + row[0]);
                     else if (to == "H.323") result.AppendLine("\n▶ H.323: " + (row.Length > 3 ? row[3] : "releaseCompleteReason=undefinedReason"));
 
@@ -598,29 +691,29 @@ namespace LosaTermVoip
                     {
                         result.AppendLine();
                         result.AppendLine("── SIP " + sipNum + " " + sv[0] + " ──");
-                        result.AppendLine("Significato: " + sv[1]);
-                        result.AppendLine("Da controllare: " + sv[2]);
+                        result.AppendLine(L.B("Significato: ","Meaning: ") + sv[1]);
+                        result.AppendLine(L.B("Da controllare: ","What to check: ") + sv[2]);
                     }
                     string[] qv;
                     if (VoipCodes.Q850.TryGetValue(q850, out qv))
                     {
                         result.AppendLine();
                         result.AppendLine("── Q.850 " + q850 + " ──");
-                        result.AppendLine("Significato: " + qv[0]);
-                        result.AppendLine("Da controllare: " + qv[1]);
+                        result.AppendLine(L.B("Significato: ","Meaning: ") + qv[0]);
+                        result.AppendLine(L.B("Da controllare: ","What to check: ") + qv[1]);
                     }
                     found = true; break;
                 }
             }
-            if (!found) result.AppendLine("Codice Q.850 " + q850 + " non in tabella.");
+            if (!found) result.AppendLine(L.B("Codice Q.850 ","Q.850 code ") + q850 + L.B(" non in tabella."," not in table."));
             txtCauseOut.Text = result.ToString();
         }
 
         // Tabella Q.850 ↔ SIP ↔ H.323
         static readonly string[][] CauseTable = new string[][] {
-            new[]{ "1",  "404 Not Found",               "Numero non assegnato/inesistente",               "undefinedReason" },
-            new[]{ "2",  "404 Not Found",               "Numero non esiste (no route to network)",         "undefinedReason" },
-            new[]{ "3",  "404 Not Found",               "Nessun percorso verso destinazione",              "undefinedReason" },
+            new[]{ "1",  "404 Not Found",               "Unallocated / non-existent number",               "undefinedReason" },
+            new[]{ "2",  "404 Not Found",               "No route to specified transit network",           "undefinedReason" },
+            new[]{ "3",  "404 Not Found",               "No route to destination",                         "undefinedReason" },
             new[]{ "16", "200 OK / BYE",                "Normal call clearing",                            "normalCallClearing" },
             new[]{ "17", "486 Busy Here",               "User busy",                                       "calledPartyBusy" },
             new[]{ "18", "480 Temporarily Unavail.",    "No user responding (ring timeout)",               "noAnswer" },
@@ -667,7 +760,7 @@ namespace LosaTermVoip
             try { split.SplitterDistance = 400; } catch { }
 
             // Sinistra: input SDP
-            var lblIn = new Label { Text="  Incolla SDP (da wireshark / PCAP):",
+            var lblIn = new Label { Text=L.B("  Incolla SDP (da wireshark / PCAP):","  Paste SDP (from Wireshark / PCAP):"),
                 Dock=DockStyle.Top, Height=22, ForeColor=Color.LightGray,
                 BackColor=Color.FromArgb(30,40,60), Padding=new Padding(4,0,0,0),
                 TextAlign=ContentAlignment.MiddleLeft };
@@ -708,7 +801,7 @@ namespace LosaTermVoip
             foreach (Match mm in Regex.Matches(sdp, @"m=(\S+)\s+(\d+)\s+(\S+)\s+(.+)"))
             {
                 sb.AppendLine("📡 Media:         " + mm.Groups[1].Value.ToUpper()
-                    + "  porta " + mm.Groups[2].Value
+                    + "  port " + mm.Groups[2].Value
                     + "  transport " + mm.Groups[3].Value);
                 string payloads = mm.Groups[4].Value;
                 // Cerca rtpmap per ogni payload
@@ -843,20 +936,20 @@ namespace LosaTermVoip
             txtHomerIp = CT(130, y, 160); txtHomerIp.Text="192.168.1.100";
             cfg.Controls.Add(txtHomerIp);
 
-            cfg.Controls.Add(CL("Porta HEP:", 310, y));
+            cfg.Controls.Add(CL(L.B("Porta HEP:","HEP Port:"), 310, y));
             numHepPort = new NumericUpDown { Location=new Point(400,y-2), Width=70,
                 Minimum=1, Maximum=65535, Value=9060,
                 BackColor=Color.FromArgb(45,55,80), ForeColor=Color.White };
             cfg.Controls.Add(numHepPort);
 
             y+=34;
-            chkHepEnabled = new CheckBox { Text="Abilita invio HEP automatico (sessioni SSH live)",
+            chkHepEnabled = new CheckBox { Text=L.B("Abilita invio HEP automatico (sessioni SSH live)","Enable automatic HEP forwarding (live SSH sessions)"),
                 Location=new Point(14,y), Width=420, ForeColor=Color.LightGreen };
             chkHepEnabled.CheckedChanged += ChkHepEnabled_Changed;
             cfg.Controls.Add(chkHepEnabled);
 
             y+=34;
-            var btnTest = new Button { Text="▶ Test HEP (invia OPTIONS fittizio)",
+            var btnTest = new Button { Text=L.B("▶ Test HEP (invia OPTIONS fittizio)","▶ Test HEP (send dummy OPTIONS)"),
                 Location=new Point(14,y), Width=240, Height=26,
                 FlatStyle=FlatStyle.Flat, ForeColor=Color.White,
                 BackColor=Color.FromArgb(30,80,30) };
@@ -865,9 +958,11 @@ namespace LosaTermVoip
             cfg.Controls.Add(btnTest);
 
             y+=34;
-            cfg.Controls.Add(new Label { Text=
+            cfg.Controls.Add(new Label { Text=L.B(
                 "ℹ  Homer (SIPCapture) riceve i pacchetti e li visualizza nella sua web UI.\n" +
                 "   Porta HEP default: 9060 (UDP). Versioni supportate: Homer 5, 7.",
+                "ℹ  Homer (SIPCapture) receives the packets and shows them in its web UI.\n" +
+                "   Default HEP port: 9060 (UDP). Supported versions: Homer 5, 7."),
                 Location=new Point(14,y), Width=560, ForeColor=Color.Gray });
 
             page.Controls.Add(cfg);
@@ -895,9 +990,9 @@ namespace LosaTermVoip
             {
                 hepHost = txtHomerIp.Text.Trim();
                 hepPort = (int)numHepPort.Value;
-                AppendHepLog("✔ HEP abilitato → " + hepHost + ":" + hepPort);
+                AppendHepLog(L.B("✔ HEP abilitato → ","✔ HEP enabled → ") + hepHost + ":" + hepPort);
             }
-            else AppendHepLog("✗ HEP disabilitato.");
+            else AppendHepLog(L.B("✗ HEP disabilitato.","✗ HEP disabled."));
         }
 
         void BtnTestHep_Click(object sender, EventArgs e)
@@ -987,7 +1082,7 @@ namespace LosaTermVoip
             txtHomerPass = CT(510,4,80); txtHomerPass.PasswordChar='●';
             top.Controls.Add(txtHomerPass);
 
-            var btnGo = new Button { Text="🌐 Apri", Location=new Point(596,4),
+            var btnGo = new Button { Text=L.B("🌐 Apri","🌐 Open"), Location=new Point(596,4),
                 Width=80, Height=26, FlatStyle=FlatStyle.Flat, ForeColor=Color.White,
                 BackColor=Color.FromArgb(30,80,150) };
             btnGo.FlatAppearance.BorderSize=0;

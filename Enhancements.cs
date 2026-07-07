@@ -39,7 +39,7 @@ namespace LosaTermVoip
                     for (int i = 0; i < 50 && (p == null || p.MainWindowHandle == IntPtr.Zero); i++)
                     { Thread.Sleep(250); if (p != null) p.Refresh(); }
                 }
-                if (p == null || p.MainWindowHandle == IntPtr.Zero) { err = "TranslatorX non si è avviato in tempo."; return false; }
+                if (p == null || p.MainWindowHandle == IntPtr.Zero) { err = L.B("TranslatorX non si è avviato in tempo.","TranslatorX did not start in time."); return false; }
 
                 ShowWindow(p.MainWindowHandle, 9);          // SW_RESTORE
                 SetForegroundWindow(p.MainWindowHandle);
@@ -290,7 +290,7 @@ namespace LosaTermVoip
             var l = Selected();
             if (l == null) return;
             try { System.Diagnostics.Process.Start(l.Url); }
-            catch (Exception ex) { MessageBox.Show("Impossibile aprire:\n" + ex.Message); }
+            catch (Exception ex) { MessageBox.Show(L.B("Impossibile aprire:\n","Cannot open:\n") + ex.Message); }
         }
     }
 
@@ -508,13 +508,19 @@ namespace LosaTermVoip
             {
                 try { if (udp != null) udp.Close(); } catch { }
                 udp = null;
-                MessageBox.Show("Impossibile aprire la porta UDP " + port + ":\n" + ex.Message +
-                    "\n\nPossibili cause:\n" +
+                MessageBox.Show(L.B("Impossibile aprire la porta UDP ","Cannot open UDP port ") + port + ":\n" + ex.Message +
+                    L.B("\n\nPossibili cause:\n" +
                     "  • Un'altra app usa già questa porta (es. un altro syslog server)\n" +
                     "  • Socket \"orfano\" di una sessione chiusa male → si libera al riavvio del PC\n" +
                     "  • Porte <1024 possono richiedere privilegi amministrativi\n\n" +
                     "Soluzione rapida: usa un'altra porta (es. 1514) e imposta il device\n" +
                     "per inviare i syslog su quella porta.",
+                    "\n\nPossible causes:\n" +
+                    "  • Another app is already using this port (e.g. another syslog server)\n" +
+                    "  • An \"orphan\" socket from a badly closed session → frees on PC restart\n" +
+                    "  • Ports <1024 may require administrator privileges\n\n" +
+                    "Quick fix: use another port (e.g. 1514) and set the device\n" +
+                    "to send syslog to that port."),
                     "Syslog", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -536,7 +542,7 @@ namespace LosaTermVoip
             listenThread.Start();
 
             btnStart.Enabled = false; btnStop.Enabled = true; numPort.Enabled = false;
-            lblStatus.Text = "● In ascolto :" + port; lblStatus.ForeColor = Color.LimeGreen;
+            lblStatus.Text = L.B("● In ascolto :","● Listening :") + port; lblStatus.ForeColor = Color.LimeGreen;
         }
 
         void StopServer()
@@ -697,12 +703,12 @@ namespace LosaTermVoip
                         AddRow(Path.GetFileName(path), line);
                 Text = "LosaTermVoip — Syslog Viewer — " + Path.GetFileName(path);
             }
-            catch (Exception ex) { MessageBox.Show("Errore lettura file:\n" + ex.Message); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore lettura file:\n","File read error:\n") + ex.Message); }
         }
 
         void ExportLog()
         {
-            using (var d = new SaveFileDialog { Filter = "Testo|*.txt", FileName = "syslog_export.txt" })
+            using (var d = new SaveFileDialog { Filter = L.B("Testo|*.txt","Text|*.txt"), FileName = "syslog_export.txt" })
                 if (d.ShowDialog() == DialogResult.OK)
                 {
                     try
@@ -710,7 +716,7 @@ namespace LosaTermVoip
                         using (var sw = new StreamWriter(d.FileName))
                             foreach (ListViewItem it in lv.Items)
                                 sw.WriteLine(it.SubItems[0].Text + " " + it.SubItems[1].Text + " " + it.SubItems[2].Text + " " + it.SubItems[3].Text);
-                        MessageBox.Show("Esportato: " + d.FileName);
+                        MessageBox.Show(L.B("Esportato: ","Exported: ") + d.FileName);
                     }
                     catch (Exception ex) { MessageBox.Show("Errore: " + ex.Message); }
                 }

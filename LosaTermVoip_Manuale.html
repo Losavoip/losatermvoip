@@ -158,7 +158,7 @@
 <section>
 <h2>🔀 Simulator (SIP, Cause Code, SDP, Debug Cmds)</h2>
 <h3>SIP Simulator</h3>
-<p>Costruisce e invia un messaggio SIP (INVITE, OPTIONS, REGISTER…) verso una destinazione, con From auto-popolato dall'IP del PC. Utile per testare la raggiungibilità/reazione di un peer.</p>
+<p>Costruisce e invia un messaggio SIP (INVITE, OPTIONS, REGISTER…) verso una destinazione, con From auto-popolato dall'IP del PC. Utile per testare la raggiungibilità/reazione di un peer. Con i campi <strong>Auth utente/pass</strong> gestisce anche il challenge <strong>Digest MD5 sui 401/407</strong> (anche per l'INVITE): reinvia automaticamente la richiesta autenticata e mostra entrambi gli scambi nel trace.</p>
 <h3>Cause Code Translator</h3>
 <p>Traduci tra <strong>Q.850 ⇄ SIP ⇄ H.323</strong> e ottieni <strong>significato + "cosa controllare"</strong> da un dizionario completo (oltre 40 risposte SIP e 20+ cause Q.850). Es: <code>488</code> → <em>codec mismatch</em>; <code>403</code> → <em>policy/whitelist</em>.</p>
 <h3>SDP / Codec Analyzer</h3>
@@ -346,7 +346,7 @@
 <section>
 <h2>🔀 Simulator (SIP, Cause Code, SDP, Debug Cmds)</h2>
 <h3>SIP Simulator</h3>
-<p>Build and send a SIP message (INVITE, OPTIONS, REGISTER…) to a destination, with From auto-filled from the PC's IP. Useful to test a peer's reachability/reaction.</p>
+<p>Build and send a SIP message (INVITE, OPTIONS, REGISTER…) to a destination, with From auto-filled from the PC's IP. Useful to test a peer's reachability/reaction. With the <strong>Auth user/pass</strong> fields it also handles the <strong>Digest MD5 challenge on 401/407</strong> (including for INVITE): it automatically resends the authenticated request and shows both exchanges in the trace.</p>
 <h3>Cause Code Translator</h3>
 <p>Translate between <strong>Q.850 ⇄ SIP ⇄ H.323</strong> and get <strong>meaning + "what to check"</strong> from a complete dictionary (40+ SIP responses and 20+ Q.850 causes). E.g. <code>488</code> → <em>codec mismatch</em>; <code>403</code> → <em>policy/whitelist</em>.</p>
 <h3>SDP / Codec Analyzer</h3>
