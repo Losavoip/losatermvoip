@@ -2,6 +2,10 @@
 
 **The Voice/UC engineer's multitool — one portable `.exe`, every vendor.**
 
+<p align="center">
+  <img src="hero.png" alt="LosaTerm · Voip Terminal — 1-click SIP Health Check and built-in VoIP diagnostic suite" width="860">
+</p>
+
 A free, no-nonsense Windows tool that puts the things you reach for every day —
 SBC/trunk diagnostics, SIP ladder diagrams, syslog capture, a SIP simulator and
 a tabbed SSH/SFTP/SCP/FTP terminal — into a single window. Vendor-neutral by
