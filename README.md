@@ -1,5 +1,7 @@
 # LosaTerm · Voip Terminal
 
+> **LOSA** = **L**ightweight **O**pen **S**IP **A**nalyzer
+
 **The Voice/UC engineer's multitool — one portable `.exe`, every vendor.**
 
 <p align="center">
