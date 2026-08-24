@@ -846,6 +846,17 @@ namespace LosaTermVoip
         public string Codecs    { get; set; }  // da SDP se presente
         public bool   IsRtp     { get; set; }  // true = stream media RTP (non un messaggio SIP)
         public string Detail    { get; set; }  // testo dettaglio (usato per le righe RTP)
+        // Header per la validazione RFC 3261
+        public string Via       { get; set; }
+        public string Branch    { get; set; }
+        public string FromHdr   { get; set; }
+        public string FromTag   { get; set; }
+        public string ToHdr     { get; set; }
+        public string ToTag     { get; set; }
+        public string CSeq      { get; set; }
+        public string MaxFwd    { get; set; }
+        public string Contact   { get; set; }
+        public string ContentLen{ get; set; }
     }
 
     // ─── SIP Ladder Panel (GDI+) ──────────────────────────────────────────────
@@ -1673,6 +1684,34 @@ namespace LosaTermVoip
             else if (Regex.IsMatch(m.Method, @"^[45]"))
                 sb.AppendLine(L.B(" 🔴 Errore SIP "," 🔴 SIP error ") + m.Method + L.B("\n   Verificare configurazione e log CUCM/CUBE.","\n   Check configuration and CUCM/CUBE logs."));
 
+            // ── Conformità RFC 3261 (solo se tshark ha popolato gli header) ──
+            bool haveHdr = !string.IsNullOrEmpty(m.Via) || !string.IsNullOrEmpty(m.CSeq)
+                        || !string.IsNullOrEmpty(m.FromHdr) || !string.IsNullOrEmpty(m.Branch)
+                        || !string.IsNullOrEmpty(m.MaxFwd);
+            if (haveHdr)
+            {
+                var pt = new SipParts();
+                string meth = m.Method ?? "";
+                pt.IsResponse = Regex.IsMatch(meth, @"^\d{3}");
+                if (pt.IsResponse) { int st; int.TryParse(meth.Substring(0, 3), out st); pt.Status = st; }
+                else pt.Method = meth.Split(' ')[0].ToUpperInvariant();
+                pt.StartLineOk = true;   // tshark ha dissezionato il messaggio
+                pt.Via    = !string.IsNullOrEmpty(m.Via) ? m.Via : (!string.IsNullOrEmpty(m.Branch) ? "Via" : "");
+                pt.Branch = m.Branch ?? "";
+                pt.From   = !string.IsNullOrEmpty(m.FromHdr) ? m.FromHdr : ((!string.IsNullOrEmpty(m.FromUser) || !string.IsNullOrEmpty(m.FromTag)) ? "From" : "");
+                pt.FromTag= m.FromTag ?? "";
+                pt.To     = !string.IsNullOrEmpty(m.ToHdr) ? m.ToHdr : ((!string.IsNullOrEmpty(m.ToUser) || !string.IsNullOrEmpty(m.ToTag)) ? "To" : "");
+                pt.ToTag  = m.ToTag ?? "";
+                pt.CallId = (m.CallId == "?" || m.CallId == null) ? "" : m.CallId;
+                pt.CSeq   = m.CSeq ?? "";
+                pt.MaxFwd = m.MaxFwd ?? "";
+                pt.Contact= m.Contact ?? "";
+                pt.ContentLength = m.ContentLen ?? "";
+                pt.BodyLen = -1;   // il body grezzo non è disponibile in questa vista
+                sb.AppendLine();
+                sb.Append(SipValidator.Report(pt));
+            }
+
             txtInfo.Text = sb.ToString();
         }
     }
@@ -1689,6 +1728,17 @@ namespace LosaTermVoip
         public string SrcIp     { get; set; }
         public string DstIp     { get; set; }
         public string Direction { get; set; }   // IN / OUT / ?
+        // Header per la validazione RFC 3261 (Fasi 1+2)
+        public string Via       { get; set; }
+        public string Branch    { get; set; }
+        public string FromHdr   { get; set; }
+        public string FromTag   { get; set; }
+        public string ToHdr     { get; set; }
+        public string ToTag     { get; set; }
+        public string CSeq      { get; set; }
+        public string MaxFwd    { get; set; }
+        public string Contact   { get; set; }
+        public string ContentLen{ get; set; }
     }
 
     // ─── PCAP Analyzer (via tshark) ───────────────────────────────────────────
@@ -1777,6 +1827,9 @@ namespace LosaTermVoip
         //   -e sip.Call-ID
         //   -e sip.from.user  -e sip.to.user
         //   -E separator=|  -E quote=n
+        // Accesso difensivo ai campi tshark (tshark taglia gli empty finali)
+        static string Fld(string[] a, int i) { return (a != null && i < a.Length) ? a[i].Trim() : ""; }
+
         public static List<PcapSipEntry> ExtractCallFlow(string tshark, string pcap)
         {
             var result = new List<PcapSipEntry>();
@@ -1787,6 +1840,8 @@ namespace LosaTermVoip
                     "-e frame.time_relative -e frame.time -e ip.src -e ip.dst " +
                     "-e sip.Request-Line -e sip.Status-Line " +
                     "-e sip.Call-ID -e sip.from.user -e sip.to.user " +
+                    "-e sip.Via -e sip.Via.branch -e sip.From -e sip.from.tag -e sip.To -e sip.to.tag " +
+                    "-e sip.CSeq -e sip.Max-Forwards -e sip.Contact -e sip.Content-Length " +
                     "-E separator=| -E quote=n -E occurrence=f",
                     pcap);
 
@@ -1833,7 +1888,17 @@ namespace LosaTermVoip
                         CallId    = cid.Length > 0 ? cid : "?",
                         From      = f[7].Trim(),
                         To        = f[8].Trim(),
-                        Direction = "?"   // senza riferimento IP locale non possiamo sapere IN/OUT
+                        Direction = "?",  // senza riferimento IP locale non possiamo sapere IN/OUT
+                        Via        = Fld(f, 9),
+                        Branch     = Fld(f, 10),
+                        FromHdr    = Fld(f, 11),
+                        FromTag    = Fld(f, 12),
+                        ToHdr      = Fld(f, 13),
+                        ToTag      = Fld(f, 14),
+                        CSeq       = Fld(f, 15),
+                        MaxFwd     = Fld(f, 16),
+                        Contact    = Fld(f, 17),
+                        ContentLen = Fld(f, 18)
                     });
                 }
                 proc.WaitForExit(60000);
@@ -1907,7 +1972,17 @@ namespace LosaTermVoip
                     Group    = e.CallId,   // default: ogni Call-ID è la sua chiamata
                     FromUser = e.From,
                     ToUser   = e.To,
-                    Codecs   = ""
+                    Codecs   = "",
+                    Via        = e.Via,
+                    Branch     = e.Branch,
+                    FromHdr    = e.FromHdr,
+                    FromTag    = e.FromTag,
+                    ToHdr      = e.ToHdr,
+                    ToTag      = e.ToTag,
+                    CSeq       = e.CSeq,
+                    MaxFwd     = e.MaxFwd,
+                    Contact    = e.Contact,
+                    ContentLen = e.ContentLen
                 });
             }
 

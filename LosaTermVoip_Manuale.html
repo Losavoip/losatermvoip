@@ -143,6 +143,7 @@
 </ul>
 <h3>Diagnosi automatica</h3>
 <p>Selezionando una chiamata, il pannello di destra mostra una <strong>diagnosi automatica</strong>: esito (200/BYE oppure fallimento con codice e <em>cosa controllare</em>), <strong>ringback locale (180) vs early media (183)</strong>, challenge di autenticazione ripetuti, timeout/nessuna risposta.</p>
+<p>Su ogni messaggio viene inoltre eseguito un <strong>controllo di conformità RFC 3261</strong>: presenza dei campi obbligatori (Via, From, To, Call-ID, CSeq, Max-Forwards), branch <code>z9hG4bK</code>, tag From/To, coerenza CSeq↔metodo, Max-Forwards, Content-Length e Contact in INVITE/2xx — con verdetto ✅ conforme / ⚠️ avvisi / ⛔ malformato e l'elenco di cosa manca. Lo stesso controllo appare sulla risposta reale nel <em>SIP Builder</em>.</p>
 </section>
 
 <section>
@@ -331,6 +332,7 @@
 </ul>
 <h3>Auto-diagnosis</h3>
 <p>When you select a call, the right panel shows an <strong>automatic diagnosis</strong>: outcome (200/BYE or failure with code and <em>what to check</em>), <strong>local ringback (180) vs early media (183)</strong>, repeated auth challenges, timeout/no answer.</p>
+<p>Each message is also run through an <strong>RFC 3261 conformance check</strong>: presence of the mandatory fields (Via, From, To, Call-ID, CSeq, Max-Forwards), <code>z9hG4bK</code> branch, From/To tags, CSeq↔method consistency, Max-Forwards, Content-Length and Contact in INVITE/2xx — with a ✅ compliant / ⚠️ warnings / ⛔ malformed verdict and the list of what's missing. The same check appears on the real response in the <em>SIP Builder</em>.</p>
 </section>
 
 <section>

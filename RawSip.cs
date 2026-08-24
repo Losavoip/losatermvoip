@@ -101,6 +101,7 @@ namespace LosaTermVoip
 
                     string sent1, resp1 = SendOnce(tr, ip, port, host, localIp, method, from, to, contact, cseqN, expires, extra, body, callId, fromTag, null, out sent1);
                     sb.Append(">>> " + sent1 + "\r\n<<< \r\n" + (resp1.Length>0?resp1:NoResp()));
+                    if (resp1.Length>0) sb.Append("\r\n" + SipValidator.ReportRaw(resp1));
 
                     int code = StatusCode(resp1);
                     if ((code==401 || code==407) && authUser.Length>0)
@@ -111,6 +112,7 @@ namespace LosaTermVoip
                         string sent2, resp2 = SendOnce(tr, ip, port, host, localIp, method, from, to, contact, cseqN+1, expires, extra, body, callId, fromTag, auth, out sent2);
                         sb.Append("\r\n\r\n══ " + L.B("Ritento con Digest (CSeq "+(cseqN+1)+")","Retry with Digest (CSeq "+(cseqN+1)+")") + " ══\r\n\r\n");
                         sb.Append(">>> " + sent2 + "\r\n<<< \r\n" + (resp2.Length>0?resp2:NoResp()));
+                        if (resp2.Length>0) sb.Append("\r\n" + SipValidator.ReportRaw(resp2));
                     }
                 }
                 catch (Exception ex) { sb.Append("✗ " + ex.Message); }
