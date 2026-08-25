@@ -46,11 +46,16 @@ namespace LosaTermVoip
             btn.FlatAppearance.BorderSize=0; btn.Click += (s,e)=>Open(); top.Controls.Add(btn);
             lblPath = new Label { Text=L.B("Nessun file aperto.","No file open."), Location=new Point(150,10), AutoSize=true, ForeColor=Color.Gray };
             top.Controls.Add(lblPath);
+            var btnR = ReportHelper.MakeButton(640, 6);
+            btnR.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnR.Click += (s,e)=>ReportHelper.ExportText(this, "Provisioning Viewer", txtKeys.Text);
+            top.Controls.Add(btnR);
 
             var hdrK = new Label { Text=L.B("  ⭐ Parametri VoIP rilevanti (password mascherate)","  ⭐ Relevant VoIP parameters (passwords masked)"), Dock=DockStyle.Top, Height=22,
                 ForeColor=Color.LightGray, BackColor=Color.FromArgb(30,30,45), TextAlign=ContentAlignment.MiddleLeft };
             txtKeys = new TextBox { Dock=DockStyle.Top, Height=220, Multiline=true, ReadOnly=true, ScrollBars=ScrollBars.Vertical,
                 BackColor=Color.FromArgb(12,16,24), ForeColor=Color.LimeGreen, Font=new Font("Consolas",9.5f), BorderStyle=BorderStyle.None };
+            txtKeys.TextChanged += (s,e)=>ReportHelper.Set("Provisioning Viewer", txtKeys.Text);
 
             var hdrR = new Label { Text=L.B("  📄 Contenuto completo","  📄 Full content"), Dock=DockStyle.Top, Height=22,
                 ForeColor=Color.LightGray, BackColor=Color.FromArgb(30,30,45), TextAlign=ContentAlignment.MiddleLeft };

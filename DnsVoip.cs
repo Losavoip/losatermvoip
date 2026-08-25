@@ -42,8 +42,13 @@ namespace LosaTermVoip
             var btnE = Btn("☎ ENUM", 310, 41, 100, Color.FromArgb(80,60,120)); btnE.Click += (s,e)=>DoEnum(); top.Controls.Add(btnE);
             top.Controls.Add(new Label { Text=L.B("NAPTR → SRV → A/AAAA, con warning sui record mancanti.","NAPTR → SRV → A/AAAA, with warnings for missing records."), Location=new Point(430,46), AutoSize=true, ForeColor=Color.Gray });
 
+            var btnR = ReportHelper.MakeButton(530, 7);
+            btnR.Click += (s,e)=>ReportHelper.ExportText(this, "DNS VoIP Analyzer", txtOut.Text);
+            top.Controls.Add(btnR);
+
             txtOut = new TextBox { Dock=DockStyle.Fill, Multiline=true, ReadOnly=true, ScrollBars=ScrollBars.Vertical,
                 BackColor=Color.FromArgb(12,16,24), ForeColor=Color.Gainsboro, Font=new Font("Consolas",9.5f), BorderStyle=BorderStyle.None };
+            txtOut.TextChanged += (s,e)=>ReportHelper.Set("DNS VoIP Analyzer", txtOut.Text);
 
             Controls.Add(txtOut);
             Controls.Add(top);

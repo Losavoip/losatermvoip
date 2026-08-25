@@ -51,6 +51,9 @@ namespace LosaTermVoip
             btnGo = new Button { Text=L.B("🔥 Test porte","🔥 Test ports"), Location=new Point(382,13), Width=130, Height=28, FlatStyle=FlatStyle.Flat,
                 BackColor=Color.FromArgb(40,80,140), ForeColor=Color.White, Font=new Font("Segoe UI",9,FontStyle.Bold) };
             btnGo.FlatAppearance.BorderSize=0; btnGo.Click += (s,e)=>Run(); top.Controls.Add(btnGo);
+            var btnR = ReportHelper.MakeButton(520, 14);
+            btnR.Click += (s,e)=>ReportHelper.ExportText(this, "Firewall port-check", LvToText());
+            top.Controls.Add(btnR);
 
             lv = new ListView { Dock=DockStyle.Fill, View=View.Details, FullRowSelect=true, GridLines=true,
                 BackColor=Color.FromArgb(18,18,30), ForeColor=Color.White };
@@ -60,6 +63,20 @@ namespace LosaTermVoip
                 Text=L.B("  RTP/RTCP (UDP 10000-20000 tipico) non è testabile senza una chiamata reale: usa il RTP Player su un PCAP.","  RTP/RTCP (UDP 10000-20000 typical) can't be tested without a real call: use the RTP Player on a PCAP.") };
 
             Controls.Add(lv); Controls.Add(foot); Controls.Add(top);
+        }
+
+        string LvToText()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Firewall port-check — " + (txtHost.Text ?? "").Trim());
+            sb.AppendLine(new string('-', 62));
+            sb.AppendLine(string.Format("{0,-8} {1,-6} {2,-24} {3}", "Port", "Proto", "Service", "Result"));
+            foreach (ListViewItem it in lv.Items)
+                sb.AppendLine(string.Format("{0,-8} {1,-6} {2,-24} {3}", it.Text,
+                    it.SubItems.Count > 1 ? it.SubItems[1].Text : "",
+                    it.SubItems.Count > 2 ? it.SubItems[2].Text : "",
+                    it.SubItems.Count > 3 ? it.SubItems[3].Text : ""));
+            return sb.ToString();
         }
 
         void Run()
@@ -83,6 +100,7 @@ namespace LosaTermVoip
                     if (lv.IsHandleCreated)
                         lv.BeginInvoke((MethodInvoker)delegate {
                             if (idx < lv.Items.Count) { lv.Items[idx].SubItems[3].Text = res; lv.Items[idx].ForeColor = col; }
+                            ReportHelper.Set("Firewall port-check", LvToText());
                         });
                 }
                 if (btnGo.IsHandleCreated) btnGo.BeginInvoke((MethodInvoker)delegate { btnGo.Enabled = true; });

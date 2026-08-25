@@ -41,6 +41,9 @@ namespace LosaTermVoip
             cmbTransport = Cmb(314, 9, 80, new[]{ "UDP","TCP","TLS" }); top.Controls.Add(cmbTransport);
             btnSend = new Button { Text=L.B("▶ Invia","▶ Send"), Location=new Point(404,8), Width=120, Height=26, FlatStyle=FlatStyle.Flat, BackColor=Color.FromArgb(30,110,30), ForeColor=Color.White, Font=new Font("Segoe UI",9,FontStyle.Bold) };
             btnSend.FlatAppearance.BorderSize=0; btnSend.Click += (s,e)=>Send(); top.Controls.Add(btnSend);
+            var btnR = ReportHelper.MakeButton(532, 8);
+            btnR.Click += (s,e)=>ReportHelper.ExportText(this, "Raw SIP tester", txtOut.Text);
+            top.Controls.Add(btnR);
 
             var form = new Panel { Dock = DockStyle.Top, Height = 252, BackColor = Color.FromArgb(28,28,40) };
             int y=12;
@@ -65,6 +68,7 @@ namespace LosaTermVoip
             var hdrR = new Label { Text=L.B("  Messaggio inviato ↑  /  Risposta ↓","  Sent message ↑  /  Response ↓"), Dock=DockStyle.Top, Height=22, ForeColor=Color.LightGray, BackColor=Color.FromArgb(30,30,45), TextAlign=ContentAlignment.MiddleLeft };
             txtOut = new TextBox { Dock=DockStyle.Fill, Multiline=true, ReadOnly=true, ScrollBars=ScrollBars.Both, WordWrap=false,
                 BackColor=Color.FromArgb(12,16,24), ForeColor=Color.Gainsboro, Font=new Font("Consolas",9.5f), BorderStyle=BorderStyle.None };
+            txtOut.TextChanged += (s,e)=>ReportHelper.Set("Raw SIP tester", txtOut.Text);
 
             Controls.Add(txtOut);
             Controls.Add(hdrR);

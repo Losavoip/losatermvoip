@@ -37,9 +37,13 @@ namespace LosaTermVoip
             var btn = new Button { Text=L.B("🔐 Analizza","🔐 Analyze"), Location=new Point(12,116), Width=140, Height=28, FlatStyle=FlatStyle.Flat,
                 BackColor=Color.FromArgb(40,80,140), ForeColor=Color.White, Font=new Font("Segoe UI",9,FontStyle.Bold) };
             btn.FlatAppearance.BorderSize=0; btn.Click += (s,e)=>Analyze(); top.Controls.Add(btn);
+            var btnR = ReportHelper.MakeButton(160, 116);
+            btnR.Click += (s,e)=>ReportHelper.ExportText(this, "SRTP / DTLS Analyzer", txtOut.Text);
+            top.Controls.Add(btnR);
 
             txtOut = new TextBox { Dock=DockStyle.Fill, Multiline=true, ReadOnly=true, ScrollBars=ScrollBars.Vertical,
                 BackColor=Color.FromArgb(12,16,24), ForeColor=Color.Gainsboro, Font=new Font("Consolas",9.5f), BorderStyle=BorderStyle.None };
+            txtOut.TextChanged += (s,e)=>ReportHelper.Set("SRTP / DTLS Analyzer", txtOut.Text);
 
             Controls.Add(txtOut);
             Controls.Add(top);

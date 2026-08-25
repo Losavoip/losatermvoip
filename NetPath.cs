@@ -51,9 +51,13 @@ namespace LosaTermVoip
             txtTarget = new TextBox { Location=new Point(330,y-2), Width=120, BackColor=CIn, ForeColor=Color.White, BorderStyle=BorderStyle.FixedSingle, Text="8.8.8.8" };
             top.Controls.Add(txtTarget);
             btnGo = Btn(L.B("🗺️ Scopri percorso","🗺️ Discover path"), 470, y-3, 160, Color.FromArgb(30,110,30)); btnGo.Click += (s,e)=>Run(); top.Controls.Add(btnGo);
+            var btnR = ReportHelper.MakeButton(636, y-4);
+            btnR.Click += (s,e)=>ReportHelper.ExportText(this, "Network Path (LLDP/CDP)", rtb.Text);
+            top.Controls.Add(btnR);
 
             rtb = new RichTextBox { Dock=DockStyle.Fill, ReadOnly=true, BackColor=Color.FromArgb(12,16,24),
                 ForeColor=Color.Gainsboro, Font=new Font("Consolas",9.5f), BorderStyle=BorderStyle.None };
+            rtb.TextChanged += (s,e)=>ReportHelper.Set("Network Path (LLDP/CDP)", rtb.Text);
 
             Controls.Add(rtb);
             Controls.Add(top);

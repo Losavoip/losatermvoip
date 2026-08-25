@@ -56,6 +56,7 @@ namespace LosaTermVoip
 
             rtb = new RichTextBox { Dock=DockStyle.Fill, ReadOnly=true, BackColor=Color.FromArgb(12,16,24),
                 ForeColor=Color.Gainsboro, Font=new Font("Consolas",9.5f), BorderStyle=BorderStyle.None };
+            rtb.TextChanged += (s,e)=>ReportHelper.Set("SIP Health Check", rtb.Text + "\r\n" + (lblScore != null ? lblScore.Text : ""));
 
             Controls.Add(rtb);
             Controls.Add(lblScore);

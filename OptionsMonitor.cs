@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -42,6 +43,7 @@ namespace LosaTermVoip
             StartPosition = FormStartPosition.CenterParent;
             BackColor = CBg; ForeColor = Color.White; Font = new Font("Segoe UI", 9);
             Build();
+            LoadCfg();   // ricarica i trunk configurati (monitor fermo)
             FormClosed += (s,e)=>{ if (timer!=null) timer.Stop(); };
         }
 
@@ -60,6 +62,8 @@ namespace LosaTermVoip
 
             btnStart = Btn(L.B("▶ Avvia","▶ Start"), 670, 9, 90, Color.FromArgb(30,110,30)); btnStart.Click += (s,e)=>StartMon(); top.Controls.Add(btnStart);
             btnStop  = Btn(L.B("■ Ferma","■ Stop"), 766, 9, 90, Color.FromArgb(120,30,30)); btnStop.Enabled=false; btnStop.Click += (s,e)=>StopMon(); top.Controls.Add(btnStop);
+            var btnR = ReportHelper.MakeButton(766, 40); btnR.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnR.Click += (s,e)=>ReportHelper.ExportText(this, "SIP OPTIONS Monitor", LvToText()); top.Controls.Add(btnR);
 
             top.Controls.Add(new Label { Text=L.B("Doppio click su una riga per rimuoverla. Un 200 OK = trunk attivo.","Double-click a row to remove it. A 200 OK = trunk up."),
                 Location=new Point(12,44), AutoSize=true, ForeColor=Color.Gray });
@@ -85,19 +89,21 @@ namespace LosaTermVoip
             targets.Add(new Target { Host = host, Port = port });
             txtHost.Clear();
             RefreshRows();
+            SaveCfg();
         }
 
         void RemoveSelected()
         {
             if (lv.SelectedItems.Count == 0) return;
             int i = lv.SelectedItems[0].Index;
-            if (i >= 0 && i < targets.Count) { targets.RemoveAt(i); RefreshRows(); }
+            if (i >= 0 && i < targets.Count) { targets.RemoveAt(i); RefreshRows(); SaveCfg(); }
         }
 
         void StartMon()
         {
             if (targets.Count == 0) { MessageBox.Show(L.B("Aggiungi almeno un trunk.","Add at least one trunk."), "Monitor"); return; }
             int sec; if (!int.TryParse(txtInterval.Text, out sec) || sec < 2) sec = 10;
+            SaveCfg();   // persisti anche l'intervallo scelto
             if (timer == null) { timer = new System.Windows.Forms.Timer(); timer.Tick += (s,e)=>Poll(); }
             timer.Interval = sec * 1000;
             timer.Start();
@@ -146,6 +152,26 @@ namespace LosaTermVoip
                 lv.Items.Add(it);
             }
             lv.EndUpdate();
+            ReportHelper.Set("SIP OPTIONS Monitor", LvToText());
+        }
+
+        string LvToText()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("SIP OPTIONS Monitor — " + DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+            sb.AppendLine(new string('-', 74));
+            sb.AppendLine(string.Format("{0,-26} {1,-16} {2,-8} {3,-8} {4,-8} {5}", "Trunk", "Status", "RTT", "Uptime", "OK/Tot", "Last OK"));
+            foreach (var t in targets)
+            {
+                double up = t.Sent > 0 ? 100.0 * t.Ok / t.Sent : 0;
+                sb.AppendLine(string.Format("{0,-26} {1,-16} {2,-8} {3,-8} {4,-8} {5}",
+                    t.Host + ":" + t.Port, t.LastStatus,
+                    t.LastRtt >= 0 ? t.LastRtt + "ms" : "—",
+                    t.Sent > 0 ? up.ToString("0.#") + "%" : "—",
+                    t.Ok + "/" + t.Sent,
+                    t.LastOk == DateTime.MinValue ? "—" : t.LastOk.ToString("HH:mm:ss")));
+            }
+            return sb.ToString();
         }
 
         static bool SendOptions(string host, int port, out long rttMs, out string status)
@@ -199,6 +225,54 @@ namespace LosaTermVoip
             }
             catch (SocketException) { status = "timeout"; return false; }
             catch (Exception ex) { status = ex.Message; return false; }
+        }
+
+        // ── Persistenza: %APPDATA%\LosaTermVoip\options_monitor.txt ──
+        static string CfgPath()
+        {
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LosaTermVoip");
+            return Path.Combine(dir, "options_monitor.txt");
+        }
+
+        void SaveCfg()
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(CfgPath());
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                var sb = new StringBuilder();
+                sb.AppendLine("interval=" + (txtInterval.Text ?? "10").Trim());
+                foreach (var t in targets) sb.AppendLine(t.Host + ":" + t.Port);
+                File.WriteAllText(CfgPath(), sb.ToString(), Encoding.UTF8);
+            }
+            catch { }
+        }
+
+        void LoadCfg()
+        {
+            try
+            {
+                string p = CfgPath();
+                if (!File.Exists(p)) return;
+                foreach (var raw in File.ReadAllLines(p))
+                {
+                    string line = raw.Trim();
+                    if (line.Length == 0) continue;
+                    if (line.StartsWith("interval="))
+                    {
+                        string iv = line.Substring(9).Trim();
+                        int tv; if (int.TryParse(iv, out tv) && tv >= 2) txtInterval.Text = iv;
+                        continue;
+                    }
+                    int idx = line.LastIndexOf(':');
+                    string host = line; int port = 5060;
+                    if (idx > 0) { host = line.Substring(0, idx); int.TryParse(line.Substring(idx + 1), out port); }
+                    if (port <= 0) port = 5060;
+                    if (host.Length > 0) targets.Add(new Target { Host = host, Port = port });
+                }
+                RefreshRows();   // il monitor resta FERMO; i trunk appaiono con stato "—"
+            }
+            catch { }
         }
 
         static Button Btn(string t,int x,int y,int w,Color c){ var b=new Button{ Text=t, Location=new Point(x,y), Width=w, Height=28, FlatStyle=FlatStyle.Flat, BackColor=c, ForeColor=Color.White, Font=new Font("Segoe UI",9,FontStyle.Bold)}; b.FlatAppearance.BorderSize=0; return b; }

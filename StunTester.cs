@@ -53,8 +53,13 @@ namespace LosaTermVoip
             top.Controls.Add(new Label { Text=L.B("IP pubblico riflesso + classificazione NAT (cone vs simmetrico).","Reflexive public IP + NAT classification (cone vs symmetric)."),
                 Location=new Point(14,48), AutoSize=true, ForeColor=Color.Gray });
 
+            var btnR = ReportHelper.MakeButton(594, 43);
+            btnR.Click += (s,e)=>ReportHelper.ExportText(this, "STUN / NAT", txtOut.Text);
+            top.Controls.Add(btnR);
+
             txtOut = new TextBox { Dock=DockStyle.Fill, Multiline=true, ReadOnly=true, ScrollBars=ScrollBars.Vertical,
                 BackColor=Color.FromArgb(12,16,24), ForeColor=Color.LimeGreen, Font=new Font("Consolas",10), BorderStyle=BorderStyle.None };
+            txtOut.TextChanged += (s,e)=>ReportHelper.Set("STUN / NAT", txtOut.Text);
 
             Controls.Add(txtOut);
             Controls.Add(top);

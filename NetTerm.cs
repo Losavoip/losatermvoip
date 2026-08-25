@@ -1209,10 +1209,22 @@ namespace LosaTermVoip
             Shown += (s, e) => { TopMost = false; BringToFront(); Activate(); };
             FormClosing += (s, e) => SaveLayout();
 
-            // Drag & drop di PCAP/log sulla finestra
+            // Drag & drop di PCAP/log sulla finestra (e su tutti i controlli figli)
             AllowDrop = true;
             DragEnter += HandleDragEnter;
             DragDrop  += HandleDragDrop;
+            WireDrop(this);
+        }
+
+        // Abilita il drop ricorsivamente (così trascinare un file funziona ovunque nella finestra,
+        // non solo sulle zone vuote). Salta i campi di testo/combo per non rompere il drop di testo.
+        void WireDrop(Control c)
+        {
+            if (!(c is TextBoxBase || c is ComboBox))
+            {
+                try { c.AllowDrop = true; c.DragEnter += HandleDragEnter; c.DragDrop += HandleDragDrop; } catch { }
+            }
+            foreach (Control ch in c.Controls) WireDrop(ch);
         }
 
         // Applica dimensioni/posizione/stato salvati all'avvio
@@ -1301,6 +1313,7 @@ namespace LosaTermVoip
 
             var mVoip = new ToolStripMenuItem("🧰 VoIP");
             mVoip.DropDownItems.Add("🩺 SIP Health Check (1-click)", null, (s, e) => OpenHealthCheck());
+            mVoip.DropDownItems.Add(L.B("🧪 Environment Check (per vendor)","🧪 Environment Check (per vendor)"), null, (s, e) => OpenEnvCheck());
             mVoip.DropDownItems.Add(new ToolStripSeparator());
             mVoip.DropDownItems.Add(L.B("🗺️ Percorso di rete (LLDP/CDP)","🗺️ Network Path (LLDP/CDP)"), null, (s, e) => OpenNetPath());
             mVoip.DropDownItems.Add(L.B("🔴 Cattura LIVE → pcap","🔴 Live Capture → pcap"),  null, (s, e) => OpenLiveCapture());
@@ -1312,10 +1325,13 @@ namespace LosaTermVoip
             mVoip.DropDownItems.Add("🛰️ Tester STUN / NAT",   null, (s, e) => OpenStunTester());
             mVoip.DropDownItems.Add("🧬 Raw SIP / Header tester", null, (s, e) => OpenRawSip());
             mVoip.DropDownItems.Add("🔐 SRTP / DTLS Analyzer", null, (s, e) => OpenSrtp());
+            mVoip.DropDownItems.Add("🟦 Teams Direct Routing readiness", null, (s, e) => OpenTeamsDr());
             mVoip.DropDownItems.Add("🛠️ Provisioning Viewer",  null, (s, e) => OpenProvisioning());
             mVoip.DropDownItems.Add("🌐 SIP over WebSocket (WebRTC)", null, (s, e) => OpenWebRtc());
             mVoip.DropDownItems.Add("🔥 Firewall port-check",  null, (s, e) => OpenFirewallCheck());
             mVoip.DropDownItems.Add(L.B("🧮 Calcolatori VoIP","🧮 VoIP Calculators"),    null, (s, e) => OpenVoipCalc());
+            mVoip.DropDownItems.Add(new ToolStripSeparator());
+            mVoip.DropDownItems.Add(L.B("📄 Report VoIP completo","📄 Full VoIP report"), null, (s, e) => ReportHelper.ExportCombined(this));
 
             var mInfo = new ToolStripMenuItem("ℹ️ Info");
             mInfo.Click += (s, e) => ShowNetInfo();
@@ -1730,6 +1746,8 @@ namespace LosaTermVoip
         SipRegisterPanel   regForm;
         NetPathPanel       netPathForm;
         SrtpAnalyzerPanel  srtpForm;
+        TeamsDrPanel       teamsDrForm;
+        EnvCheckPanel      envCheckForm;
         ProvisioningPanel  provForm;
         RawSipPanel        rawSipForm;
         WebRtcPanel        webRtcForm;
@@ -1849,6 +1867,18 @@ namespace LosaTermVoip
             try { if (srtpForm == null || srtpForm.IsDisposed) srtpForm = new SrtpAnalyzerPanel();
                   try { srtpForm.Icon = AppIcon.Shared; } catch { } srtpForm.Show(this); srtpForm.BringToFront(); }
             catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "SRTP Analyzer:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenEnvCheck()
+        {
+            try { if (envCheckForm == null || envCheckForm.IsDisposed) envCheckForm = new EnvCheckPanel();
+                  try { envCheckForm.Icon = AppIcon.Shared; } catch { } envCheckForm.Show(this); envCheckForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Environment Check:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenTeamsDr()
+        {
+            try { if (teamsDrForm == null || teamsDrForm.IsDisposed) teamsDrForm = new TeamsDrPanel();
+                  try { teamsDrForm.Icon = AppIcon.Shared; } catch { } teamsDrForm.Show(this); teamsDrForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Teams DR:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenProvisioning()
         {
@@ -1988,6 +2018,9 @@ namespace LosaTermVoip
             tabPage.Controls.Add(analyzer);
             analyzer.AnalyzePcap(tshark, pcapFile);
 
+            // Restringi la lista connessioni per dare spazio all'analisi (il tasto Report resta raggiungibile)
+            try { if (mainSplit != null && mainSplit.SplitterDistance > 260) mainSplit.SplitterDistance = 260; } catch { }
+
             tabPage.HandleDestroyed += (s, e) => { try { File.Delete(tempLog); } catch { } };
         }
 
@@ -2009,11 +2042,31 @@ namespace LosaTermVoip
             catch (Exception ex) { Log(L.B("Errore drag&drop: ","Drag&drop error: ") + ex.Message); }
         }
 
+        // Risolve un collegamento Windows (.lnk) al file di destinazione reale (late-bound COM, nessun reference extra)
+        static string ResolveLnk(string path)
+        {
+            try
+            {
+                if (path == null || !path.ToLowerInvariant().EndsWith(".lnk")) return path;
+                Type t = Type.GetTypeFromProgID("WScript.Shell");
+                if (t == null) return path;
+                object shell = Activator.CreateInstance(t);
+                object lnk = t.InvokeMember("CreateShortcut", System.Reflection.BindingFlags.InvokeMethod, null, shell, new object[] { path });
+                string target = lnk.GetType().InvokeMember("TargetPath", System.Reflection.BindingFlags.GetProperty, null, lnk, null) as string;
+                return (!string.IsNullOrEmpty(target) && File.Exists(target)) ? target : path;
+            }
+            catch { return path; }
+        }
+
         void ProcessDroppedFile(string file)
         {
+            file = ResolveLnk(file);   // se è un collegamento .lnk, usa il file reale puntato
             if (!File.Exists(file)) return;
             string ext = Path.GetExtension(file).ToLowerInvariant();
             bool isPcap = (ext == ".pcap" || ext == ".pcapng" || ext == ".cap");
+
+            // Un PCAP ha una sola azione sensata → aprilo direttamente, senza dialog
+            if (isPcap) { OpenPcapFile(file); return; }
 
             using (var d = new DropActionDialog(Path.GetFileName(file), isPcap))
             {

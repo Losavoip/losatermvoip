@@ -93,8 +93,8 @@ namespace LosaTermVoip
                 r.Add(new AnalyzerRule("SRTP Error",           @"[Ss][Rr][Tt][Pp].*(error|fail)|[Cc]rypto.*mismatch", Severity.Error, L.B("Errore SRTP/crypto. Verificare policy media encryption su CUCM e CUBE.","SRTP/crypto error. Check media encryption policy on CUCM and CUBE."), "CUBE"));
 
                 // ── Call Flow ────────────────────────────────────────────────
-                r.Add(new AnalyzerRule(L.B("INVITE entrante","INVITE incoming"),   @"^INVITE sip:",                          Severity.Info, L.B("Chiamata SIP entrante.","Incoming SIP call."), "CUBE"));
-                r.Add(new AnalyzerRule(L.B("INVITE uscente","INVITE outgoing"),    @"Sending:\s*\r?\nINVITE sip:",            Severity.Info, L.B("Chiamata SIP uscente.","Outgoing SIP call."), "CUBE"));
+                r.Add(new AnalyzerRule("INVITE",   @"^INVITE sip:",                          Severity.Info, L.B("INVITE SIP (setup chiamata) — la direzione è nel diagramma ladder.","SIP INVITE (call setup) — direction is shown in the ladder diagram."), "CUBE"));
+                r.Add(new AnalyzerRule(L.B("INVITE (inviato)","INVITE (sent)"),    @"Sending:\s*\r?\nINVITE sip:",            Severity.Info, L.B("INVITE uscente (marker 'Sending:' nei log Cisco IOS).","Outgoing INVITE ('Sending:' marker in Cisco IOS logs)."), "CUBE"));
                 r.Add(new AnalyzerRule("200 OK",            @"SIP/2\.0 200 OK",                       Severity.Info, L.B("Chiamata stabilita (200 OK).","Call established (200 OK)."), "CUBE"));
                 r.Add(new AnalyzerRule("BYE",               @"^BYE sip:|Sending.*\nBYE sip:",         Severity.Info, L.B("Terminazione chiamata (BYE).","Call termination (BYE)."), "CUBE"));
                 r.Add(new AnalyzerRule("CANCEL",            @"^CANCEL sip:",                          Severity.Warning, L.B("Chiamata annullata (CANCEL).","Call cancelled (CANCEL)."), "CUBE"));
@@ -243,6 +243,7 @@ namespace LosaTermVoip
         TabControl rightTabs;
         ComboBox cmbDevice;
         Label    lblStats;
+        ProgressBar pbLoad;
         System.Windows.Forms.Timer pollTimer;
 
         int cntErr = 0, cntWarn = 0, cntInfo = 0;
@@ -328,6 +329,7 @@ namespace LosaTermVoip
 
             var tabLadder = new TabPage("📊 Ladder");
             ladderPanel = new SipLadderPanel { Dock = DockStyle.Fill };
+            ladderPanel.ExportRequested += (s, e) => SaveReport();   // 💾 Report dalla barra ladder
             tabLadder.Controls.Add(ladderPanel);
 
             rightTabs = rightPanel;
@@ -336,6 +338,10 @@ namespace LosaTermVoip
 
             Controls.Add(split);
             Controls.Add(toolbar);
+
+            // Barra di caricamento (marquee) — visibile solo durante l'analisi del PCAP
+            pbLoad = new ProgressBar { Dock = DockStyle.Bottom, Height = 6, Style = ProgressBarStyle.Marquee, MarqueeAnimationSpeed = 25, Visible = false };
+            Controls.Add(pbLoad);
         }
 
         void PollLog()
@@ -578,30 +584,69 @@ namespace LosaTermVoip
             lblStats.Text = "Errori: 0  Avvisi: 0  Info: 0";
         }
 
+        static string Esc(string s) { return System.Security.SecurityElement.Escape(s ?? ""); }
+
         void SaveReport()
         {
-            using (var dlg = new SaveFileDialog { Filter = "Text file|*.txt|HTML|*.html", FileName = "NetTerm_Analysis_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") })
+            using (var dlg = new SaveFileDialog { Filter = "HTML report|*.html|Text file|*.txt", FileName = "LosaTerm_SIP_Report_" + DateTime.Now.ToString("yyyyMMdd_HHmm") })
             if (dlg.ShowDialog() == DialogResult.OK)
             {
-                var sb = new StringBuilder();
                 bool html = dlg.FileName.EndsWith(".html", StringComparison.OrdinalIgnoreCase);
-                if (html) sb.AppendLine("<html><body style='font-family:Consolas'><h2>NetTerm Analysis Report</h2><table border=1>");
-                else sb.AppendLine("NetTerm Analysis Report — " + DateTime.Now + "\r\n" + new string('=', 60));
+                string diag = ladderPanel != null ? ladderPanel.DiagnoseAll() : "";
+                var msgs = ladderPanel != null ? ladderPanel.AllMessages : new List<SipLadderMessage>();
 
+                if (!html)
+                {
+                    var t = new StringBuilder();
+                    t.AppendLine("LosaTerm — SIP Analysis Report — " + DateTime.Now + "\r\n" + new string('=', 60));
+                    t.AppendLine("\r\n" + diag + "\r\n\r\nFINDINGS:");
+                    foreach (ListViewItem item in lvFindings.Items)
+                    {
+                        var f = (Finding)item.Tag;
+                        t.AppendLine(string.Format("[{0}] {1,-8} {2,-30} {3}", f.Timestamp.ToString("HH:mm:ss"), f.Severity, f.RuleName, f.LineSnippet));
+                    }
+                    File.WriteAllText(dlg.FileName, t.ToString(), Encoding.UTF8);
+                    System.Diagnostics.Process.Start(dlg.FileName);
+                    return;
+                }
+
+                var sb = new StringBuilder();
+                sb.Append("<!doctype html><html><head><meta charset=\"utf-8\"><title>LosaTerm · SIP Analysis Report</title><style>");
+                sb.Append("body{font-family:'Segoe UI',system-ui,Arial,sans-serif;color:#1b2430;margin:0;background:#f5f7fa}");
+                sb.Append(".wrap{max-width:960px;margin:0 auto;padding:28px}");
+                sb.Append(".hd{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #2bb37a;padding-bottom:14px;margin-bottom:8px}");
+                sb.Append(".hd h1{font-size:20px;margin:0}.hd .meta{color:#6b7684;font-size:13px;text-align:right}");
+                sb.Append("h2{font-size:15px;color:#0f6b47;border-left:4px solid #2bb37a;padding-left:8px;margin:26px 0 10px}");
+                sb.Append("pre{background:#0d1117;color:#e6edf3;padding:14px;border-radius:8px;overflow:auto;font-family:Consolas,monospace;font-size:12.5px;line-height:1.55;white-space:pre-wrap}");
+                sb.Append("table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{border:1px solid #dfe3e8;padding:5px 8px;text-align:left;vertical-align:top}th{background:#eef2f6}");
+                sb.Append(".ft{margin-top:30px;padding-top:14px;border-top:1px solid #dfe3e8;color:#8b949e;font-size:12px;text-align:center}");
+                sb.Append("tr.err{background:#ffe3e3}tr.warn{background:#fff6d6}tr.info{background:#e9f6ee}");
+                sb.Append("</style></head><body><div class=\"wrap\">");
+                sb.Append("<div class=\"hd\"><h1>🩺 LosaTerm · SIP Analysis Report</h1><div class=\"meta\">" + Esc(DateTime.Now.ToString("yyyy-MM-dd HH:mm")) + "<br>" + msgs.Count + " " + L.B("messaggi","messages") + "</div></div>");
+
+                sb.Append("<h2>" + L.B("Diagnosi chiamate","Call diagnosis") + "</h2><pre>" + Esc(diag) + "</pre>");
+
+                // Ladder
+                sb.Append("<h2>" + L.B("Diagramma SIP (ladder)","SIP Ladder") + "</h2><table><tr><th>" + L.B("Ora","Time") + "</th><th>" + L.B("Metodo/Risposta","Method/Response") + "</th><th>From</th><th>To</th><th>Src → Dst</th></tr>");
+                foreach (var m in msgs)
+                {
+                    if (m.IsRtp) continue;
+                    sb.Append("<tr><td>" + Esc(m.Time) + "</td><td>" + Esc(m.Method) + "</td><td>" + Esc(m.FromUser) + "</td><td>" + Esc(m.ToUser) + "</td><td>" + Esc(m.SrcIp + ":" + m.SrcPort + " → " + m.DstIp + ":" + m.DstPort) + "</td></tr>");
+                }
+                sb.Append("</table>");
+
+                // Findings
+                sb.Append("<h2>Findings (" + lvFindings.Items.Count + ")</h2><table><tr><th>" + L.B("Ora","Time") + "</th><th>Sev.</th><th>" + L.B("Regola","Rule") + "</th><th>" + L.B("Riga / spiegazione","Line / explanation") + "</th></tr>");
                 foreach (ListViewItem item in lvFindings.Items)
                 {
                     var f = (Finding)item.Tag;
-                    if (html)
-                    {
-                        string bg = f.Severity == Severity.Error ? "#ffd2d2" : f.Severity == Severity.Warning ? "#fffac8" : "#d2f0d2";
-                        sb.AppendLine(string.Format("<tr style='background:{0}'><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td></tr>",
-                            bg, f.Timestamp.ToString("HH:mm:ss"), f.Severity, f.RuleName, f.LineSnippet, f.Explanation));
-                    }
-                    else sb.AppendLine(string.Format("[{0}] {1,-8} {2,-35} {3}", f.Timestamp.ToString("HH:mm:ss"), f.Severity, f.RuleName, f.LineSnippet));
+                    string cls = f.Severity == Severity.Error || f.Severity == Severity.Critical ? "err" : (f.Severity == Severity.Warning ? "warn" : "info");
+                    sb.Append("<tr class=\"" + cls + "\"><td>" + Esc(f.Timestamp.ToString("HH:mm:ss")) + "</td><td>" + Esc(f.Severity.ToString()) + "</td><td>" + Esc(f.RuleName) + "</td><td>" + Esc(f.LineSnippet) + "<br><span style='color:#556'>" + Esc(f.Explanation) + "</span></td></tr>");
                 }
+                sb.Append("</table>");
 
-                if (html) { sb.AppendLine("</table><h3>Call Flow</h3><pre>" + txtCallFlow.Text + "</pre></body></html>"); }
-                else { sb.AppendLine("\r\nCALL FLOW:\r\n" + txtCallFlow.Text); }
+                sb.Append("<div class=\"ft\">" + L.B("Generato con","Generated with") + " <b>LosaTerm · Voip Terminal</b> — losavoip.github.io</div>");
+                sb.Append("</div></body></html>");
 
                 File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
                 System.Diagnostics.Process.Start(dlg.FileName);
@@ -613,6 +658,7 @@ namespace LosaTermVoip
         {
             ClearFindings();
             lblStats.Text = L.B("⏳ Analisi PCAP: ","⏳ Analyzing PCAP: ") + Path.GetFileName(pcapFile) + " ...";
+            pbLoad.Visible = true;   // rotella di caricamento
             pollTimer.Stop(); // nessun polling live per i tab PCAP standalone
 
             ThreadPool.QueueUserWorkItem(_ => RunPcapAnalysis(tshark, pcapFile));
@@ -656,7 +702,7 @@ namespace LosaTermVoip
                 .Where(v => !string.IsNullOrEmpty(v)));
 
             if (allLadder.Count == 0 && string.IsNullOrEmpty(allVerbose)) {
-                BeginInvoke((Action)(() => lblStats.Text = L.B("⚠ Nessun messaggio VoIP (SIP/H.323/MEGACO/Skinny) trovato nel PCAP.","⚠ No VoIP messages (SIP/H.323/MEGACO/Skinny) found in the PCAP.")));
+                BeginInvoke((Action)(() => { pbLoad.Visible = false; lblStats.Text = L.B("⚠ Nessun messaggio VoIP (SIP/H.323/MEGACO/Skinny) trovato nel PCAP.","⚠ No VoIP messages (SIP/H.323/MEGACO/Skinny) found in the PCAP."); }));
                 return;
             }
 
@@ -712,6 +758,7 @@ namespace LosaTermVoip
                 }
             }
             BeginInvoke((Action)(() => {
+                pbLoad.Visible = false;   // fine caricamento
                 if (findings.Count > 0) AddFindings(findings);
                 int mc = allLadder.Count;
                 string msg = string.Format("📦 PCAP [{0}]: {1} msg", protoStr, mc);
@@ -857,6 +904,11 @@ namespace LosaTermVoip
         public string MaxFwd    { get; set; }
         public string Contact   { get; set; }
         public string ContentLen{ get; set; }
+        // Qualità stream RTP (per lo scorecard di chiamata)
+        public double Mos       { get; set; }
+        public double LossPct   { get; set; }
+        public double JitterMs  { get; set; }
+        public bool   HasQuality{ get; set; }
     }
 
     // ─── SIP Ladder Panel (GDI+) ──────────────────────────────────────────────
@@ -883,6 +935,7 @@ namespace LosaTermVoip
         ComboBox               cmbGroupMode;
         Label                  lblCallSel;
         string                 lastVoip, lastSip;
+        public event EventHandler ExportRequested;   // richiesto l'export report dalla barra ladder
 
         const int ROW_H   = 28;
         const int HDR_H   = 65;
@@ -972,6 +1025,17 @@ namespace LosaTermVoip
                 LoadMessages(allMsgs, lastVoip, lastSip);   // ricostruisce gruppi + tendina
             };
             filterBar.Controls.Add(cmbGroupMode);
+
+            // Export report — ben visibile qui nella barra del Ladder
+            var btnExport = new Button { Text = L.B("💾 Report","💾 Report"), Location = new Point(946, 2),
+                Width = 100, Height = 24, FlatStyle = FlatStyle.Flat,
+                ForeColor = Color.White, BackColor = Color.FromArgb(45, 95, 120), Font = new Font("Segoe UI", 9, FontStyle.Bold) };
+            btnExport.FlatAppearance.BorderSize = 0;
+            new ToolTip().SetToolTip(btnExport, L.B("Esporta il report HTML dell'analisi (diagnosi + ladder + findings)","Export the HTML analysis report (diagnosis + ladder + findings)"));
+            btnExport.Click += (s, e) => { if (ExportRequested != null) ExportRequested(this, EventArgs.Empty); };
+            filterBar.Controls.Add(btnExport);
+            // Tieni SEMPRE il pulsante Report al bordo destro della barra (così è sempre raggiungibile)
+            filterBar.Resize += (s, e) => { int x = filterBar.Width - btnExport.Width - 8; btnExport.Left = x < 200 ? 200 : x; };
 
             // Stats bar
             lblVoip = new Label {
@@ -1230,9 +1294,50 @@ namespace LosaTermVoip
 
                 if (has183) sb.AppendLine(L.B("  ♪ Early media (183 Session Progress): ringback/annuncio in-band dal remoto. Se l'utente non sente nulla → verifica taglio early media (P-Early-Media), percorso RTP e direzione media.","  ♪ Early media (183 Session Progress): in-band ringback/announcement from the remote. If the user hears nothing → check early-media cut (P-Early-Media), RTP path and media direction."));
                 else if (has180) sb.AppendLine(L.B("  ♪ Ringback locale (180 Ringing): generato dal lato chiamante.","  ♪ Local ringback (180 Ringing): generated by the calling side."));
+
+                // Scorecard qualità voce + root-cause RTP (dagli stream del gruppo)
+                int rtpN = 0; double worstMos = 5, maxLoss = 0, maxJit = 0;
+                foreach (var m in list)
+                    if (GKey(m) == grp && m.IsRtp && m.HasQuality)
+                    { rtpN++; if (m.Mos < worstMos) worstMos = m.Mos; if (m.LossPct > maxLoss) maxLoss = m.LossPct; if (m.JitterMs > maxJit) maxJit = m.JitterMs; }
+                if (rtpN > 0)
+                {
+                    bool oneWay = has200 && rtpN == 1;
+                    double q = (worstMos - 1.0) / 3.5; if (q < 0) q = 0; if (q > 1) q = 1;
+                    int score = (int)System.Math.Round(q * 100);
+                    if (oneWay) score = System.Math.Min(score, 20);
+                    sb.AppendLine("  📊 " + L.B("Qualità voce: ","Voice quality: ") + score + "/100  (MOS " + worstMos.ToString("F1") + L.B(", perdita ",", loss ") + maxLoss.ToString("F1") + "%, jitter " + maxJit.ToString("F0") + "ms)");
+                    if (oneWay)
+                        sb.AppendLine("  📌 " + L.B("Audio MONODIREZIONALE: un solo flusso RTP → verifica NAT/SBC media handling e firewall RTP.","One-way audio: only one RTP stream → check NAT/SBC media handling and RTP firewall."));
+                    else if (worstMos < 3.0 || maxLoss > 5.0)
+                        sb.AppendLine("  📌 " + L.B("Audio DEGRADATO → verifica QoS/percorso di rete (perdita/jitter).","Degraded audio → check QoS/network path (loss/jitter)."));
+                }
+
+                // Riepilogo conformità RFC 3261 sui messaggi del gruppo
+                int rfcErr = 0, rfcWarn = 0, rfcChk = 0;
+                foreach (var m in cm)
+                {
+                    var pp = PartsOf(m);
+                    if (pp == null) continue;
+                    rfcChk++;
+                    bool e = false, w = false;
+                    foreach (var x in SipValidator.Check(pp)) { if (x.Sev == SipSev.Error) e = true; else if (x.Sev == SipSev.Warn) w = true; }
+                    if (e) rfcErr++; else if (w) rfcWarn++;
+                }
+                if (rfcChk > 0)
+                {
+                    string ic = rfcErr > 0 ? "⛔" : (rfcWarn > 0 ? "⚠️" : "✅");
+                    sb.AppendLine("  " + ic + " RFC 3261: " + rfcChk + L.B(" messaggi · "," messages · ") + rfcErr + L.B(" malformati · "," malformed · ") + rfcWarn + L.B(" con avvisi"," with warnings"));
+                    if (rfcErr > 0 || rfcWarn > 0)
+                        sb.AppendLine(L.B("     (clicca un messaggio per i campi mancanti)","     (click a message for the missing fields)"));
+                }
             }
             return sb.ToString();
         }
+
+        // Accessori pubblici per l'export report
+        public string DiagnoseAll() { return DiagnoseMessages(msgs); }
+        public List<SipLadderMessage> AllMessages { get { return msgs ?? new List<SipLadderMessage>(); } }
 
         // Segui la chiamata del messaggio attualmente selezionato
         void FollowSelected()
@@ -1639,6 +1744,35 @@ namespace LosaTermVoip
 
         protected override void OnDoubleClick(EventArgs e) { FollowSelected(); base.OnDoubleClick(e); }
 
+        // Costruisce SipParts da un messaggio ladder; null se tshark non ha popolato gli header
+        static SipParts PartsOf(SipLadderMessage m)
+        {
+            if (m == null || m.IsRtp) return null;
+            bool haveHdr = !string.IsNullOrEmpty(m.Via) || !string.IsNullOrEmpty(m.CSeq)
+                        || !string.IsNullOrEmpty(m.FromHdr) || !string.IsNullOrEmpty(m.Branch)
+                        || !string.IsNullOrEmpty(m.MaxFwd);
+            if (!haveHdr) return null;
+            var pt = new SipParts();
+            string meth = m.Method ?? "";
+            pt.IsResponse = Regex.IsMatch(meth, @"^\d{3}");
+            if (pt.IsResponse) { int st; int.TryParse(meth.Substring(0, 3), out st); pt.Status = st; }
+            else pt.Method = meth.Split(' ')[0].ToUpperInvariant();
+            pt.StartLineOk = true;
+            pt.Via    = !string.IsNullOrEmpty(m.Via) ? m.Via : (!string.IsNullOrEmpty(m.Branch) ? "Via" : "");
+            pt.Branch = m.Branch ?? "";
+            pt.From   = !string.IsNullOrEmpty(m.FromHdr) ? m.FromHdr : ((!string.IsNullOrEmpty(m.FromUser) || !string.IsNullOrEmpty(m.FromTag)) ? "From" : "");
+            pt.FromTag= m.FromTag ?? "";
+            pt.To     = !string.IsNullOrEmpty(m.ToHdr) ? m.ToHdr : ((!string.IsNullOrEmpty(m.ToUser) || !string.IsNullOrEmpty(m.ToTag)) ? "To" : "");
+            pt.ToTag  = m.ToTag ?? "";
+            pt.CallId = (m.CallId == "?" || m.CallId == null) ? "" : m.CallId;
+            pt.CSeq   = m.CSeq ?? "";
+            pt.MaxFwd = m.MaxFwd ?? "";
+            pt.Contact= m.Contact ?? "";
+            pt.ContentLength = m.ContentLen ?? "";
+            pt.BodyLen = -1;
+            return pt;
+        }
+
         void ShowDetail(SipLadderMessage m)
         {
             if (m != null && m.IsRtp)
@@ -1685,29 +1819,9 @@ namespace LosaTermVoip
                 sb.AppendLine(L.B(" 🔴 Errore SIP "," 🔴 SIP error ") + m.Method + L.B("\n   Verificare configurazione e log CUCM/CUBE.","\n   Check configuration and CUCM/CUBE logs."));
 
             // ── Conformità RFC 3261 (solo se tshark ha popolato gli header) ──
-            bool haveHdr = !string.IsNullOrEmpty(m.Via) || !string.IsNullOrEmpty(m.CSeq)
-                        || !string.IsNullOrEmpty(m.FromHdr) || !string.IsNullOrEmpty(m.Branch)
-                        || !string.IsNullOrEmpty(m.MaxFwd);
-            if (haveHdr)
+            var pt = PartsOf(m);
+            if (pt != null)
             {
-                var pt = new SipParts();
-                string meth = m.Method ?? "";
-                pt.IsResponse = Regex.IsMatch(meth, @"^\d{3}");
-                if (pt.IsResponse) { int st; int.TryParse(meth.Substring(0, 3), out st); pt.Status = st; }
-                else pt.Method = meth.Split(' ')[0].ToUpperInvariant();
-                pt.StartLineOk = true;   // tshark ha dissezionato il messaggio
-                pt.Via    = !string.IsNullOrEmpty(m.Via) ? m.Via : (!string.IsNullOrEmpty(m.Branch) ? "Via" : "");
-                pt.Branch = m.Branch ?? "";
-                pt.From   = !string.IsNullOrEmpty(m.FromHdr) ? m.FromHdr : ((!string.IsNullOrEmpty(m.FromUser) || !string.IsNullOrEmpty(m.FromTag)) ? "From" : "");
-                pt.FromTag= m.FromTag ?? "";
-                pt.To     = !string.IsNullOrEmpty(m.ToHdr) ? m.ToHdr : ((!string.IsNullOrEmpty(m.ToUser) || !string.IsNullOrEmpty(m.ToTag)) ? "To" : "");
-                pt.ToTag  = m.ToTag ?? "";
-                pt.CallId = (m.CallId == "?" || m.CallId == null) ? "" : m.CallId;
-                pt.CSeq   = m.CSeq ?? "";
-                pt.MaxFwd = m.MaxFwd ?? "";
-                pt.Contact= m.Contact ?? "";
-                pt.ContentLength = m.ContentLen ?? "";
-                pt.BodyLen = -1;   // il body grezzo non è disponibile in questa vista
                 sb.AppendLine();
                 sb.Append(SipValidator.Report(pt));
             }
@@ -2047,7 +2161,11 @@ namespace LosaTermVoip
                         Group    = grp,
                         Codecs   = codec,
                         IsRtp    = true,
-                        Detail   = detail.ToString()
+                        Detail   = detail.ToString(),
+                        Mos      = mos,
+                        LossPct  = lossPct,
+                        JitterMs = jitterMs,
+                        HasQuality = true
                     });
                 }
             }

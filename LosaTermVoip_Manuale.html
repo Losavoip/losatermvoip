@@ -142,7 +142,7 @@
   <li>Le frecce <strong>RTP verdi</strong> mostrano gli stream media (codec, pacchetti) interlacciati al SIP.</li>
 </ul>
 <h3>Diagnosi automatica</h3>
-<p>Selezionando una chiamata, il pannello di destra mostra una <strong>diagnosi automatica</strong>: esito (200/BYE oppure fallimento con codice e <em>cosa controllare</em>), <strong>ringback locale (180) vs early media (183)</strong>, challenge di autenticazione ripetuti, timeout/nessuna risposta.</p>
+<p>Selezionando una chiamata, il pannello di destra mostra una <strong>diagnosi automatica</strong>: esito (200/BYE oppure fallimento con codice e <em>cosa controllare</em>), <strong>ringback locale (180) vs early media (183)</strong>, challenge di autenticazione ripetuti, timeout/nessuna risposta. Per le chiamate con RTP mostra anche uno <strong>scorecard qualità voce 0-100</strong> (MOS/perdita/jitter) e un <strong>root-cause in una riga</strong> (es. audio monodirezionale, audio degradato).</p>
 <p>Su ogni messaggio viene inoltre eseguito un <strong>controllo di conformità RFC 3261</strong>: presenza dei campi obbligatori (Via, From, To, Call-ID, CSeq, Max-Forwards), branch <code>z9hG4bK</code>, tag From/To, coerenza CSeq↔metodo, Max-Forwards, Content-Length e Contact in INVITE/2xx — con verdetto ✅ conforme / ⚠️ avvisi / ⛔ malformato e l'elenco di cosa manca. Lo stesso controllo appare sulla risposta reale nel <em>SIP Builder</em>.</p>
 </section>
 
@@ -172,7 +172,7 @@
 <section>
 <h2>📖 Doc &amp; 🖱️ Drag &amp; Drop</h2>
 <p><strong>📖 Doc</strong>: raccolta di link editabile e categorizzata (CUCM SRND, AudioCodes, ecc.) — doppio clic apre nel browser.</p>
-<p><strong>Drag &amp; Drop</strong>: trascina un file sulla finestra e scegli cosa farne — PCAP → analizza nel Ladder; trace SDL → TranslatorX; syslog/log → viewer Syslog.</p>
+<p><strong>Drag &amp; Drop</strong>: trascina un file <strong>ovunque sulla finestra</strong> — un <strong>PCAP si apre direttamente</strong> nel Ladder (con barra di caricamento), mentre per i log testuali puoi scegliere trace SDL → TranslatorX oppure syslog/log → viewer Syslog.</p>
 </section>
 
 <section>
@@ -182,6 +182,9 @@
 <h3>🩺 SIP Health Check (1-click)</h3>
 <p>Inserisci un dominio (o <code>sip:utente@dominio</code>) e con un clic esegue in sequenza <strong>DNS NAPTR → SRV → A/AAAA → TLS+certificato → SIP OPTIONS</strong>, restituendo un report colorato con <strong>punteggio 0-100</strong> ed elenco dei problemi. La via più rapida per capire "perché il trunk non va".</p>
 
+<h3>🧪 Environment Check (per vendor)</h3>
+<p>Un <strong>wizard di readiness guidato</strong>: scegli il <strong>vendor</strong> (Teams Direct Routing, AudioCodes, Ribbon, Cisco CUBE/CUCM, Asterisk/FreePBX, FreeSWITCH, Alcatel OXE/OXO, Yeastar, 3CX, generic) e LosaTerm esegue i <strong>check automatici</strong> che sa fare senza credenziali (DNS-A, handshake TLS 5061, SIP OPTIONS verso il target — per Teams i 3 PSTN hub Microsoft) e ti mostra la <strong>checklist specifica del vendor</strong> + la <strong>cheat-sheet dei comandi</strong> di debug/trace per lo stato tenant/config (Tier-B). Idea: automatizza la parte di rete, guida quella lato piattaforma — senza diventare un auditor con credenziali.</p>
+
 <h3>🔴 Cattura LIVE → pcap</h3>
 <p>Scegli l'interfaccia (mostra anche l'IP), imposta un filtro BPF (preset <strong>VoIP</strong>: 5060/5061/3478/5349 + RTP) e cattura in tempo reale con <code>dumpcap</code>. <strong>🪜 Apri nel Ladder</strong> analizza subito la cattura nel diagramma SIP. Richiede Wireshark + Npcap.</p>
 
@@ -189,7 +192,7 @@
 <p>Da un PCAP elenca gli stream RTP e ne <strong>riproduce l'audio</strong> (G.711 µ-law/A-law → WAV): senti subito audio monodirezionale, gap, fruscii. Estrae anche le <strong>cifre DTMF</strong> (RFC 2833) e salva il WAV.</p>
 
 <h3>📡 SIP OPTIONS Monitor</h3>
-<p>Watchdog continuo di uno o più trunk: invia OPTIONS a intervallo e mostra in tabella live <strong>stato, RTT, uptime %, ultimo OK/errore</strong> (verde/rosso).</p>
+<p>Watchdog continuo di uno o più trunk: invia OPTIONS a intervallo e mostra in tabella live <strong>stato, RTT, uptime %, ultimo OK/errore</strong> (verde/rosso). I trunk configurati vengono <strong>salvati</strong> (%APPDATA%\LosaTermVoip): al riavvio li ritrovi già in lista, con il monitor <strong>fermo</strong>, pronto da avviare.</p>
 
 <h3>🔑 SIP Registration Live</h3>
 <p>Registra un account SIP con <strong>autenticazione Digest MD5</strong> (gestisce il challenge 401/407: realm/nonce/qop) e mostra l'Expires concesso. Con "Mantieni registrato" fa il <strong>refresh automatico</strong>; pulsante per de-registrare (Expires 0).</p>
@@ -217,6 +220,9 @@
 <h3>🔐 SRTP / DTLS Analyzer</h3>
 <p>Incolla un SDP → analizza la sicurezza del media: <strong>SDES</strong> (a=crypto: suite, chiave), <strong>DTLS-SRTP</strong> (a=fingerprint, a=setup), con warning (SHA1_32, NULL cipher, RTP in chiaro).</p>
 
+<h3>🟦 Teams Direct Routing — readiness</h3>
+<p>Verifica in 1 click la raggiungibilità dei <strong>PSTN hub Microsoft</strong> (<code>sip/sip2/sip3.pstnhub.microsoft.com</code>): risoluzione <strong>DNS A</strong> (Teams non usa SRV) e <strong>handshake TLS su 5061</strong> con lettura del certificato Microsoft, più la <strong>checklist dei requisiti DR</strong> (certificato SBC, porte media UDP 49152–53247, range IP Microsoft, pairing SBC, abilitazione utente).</p>
+
 <h3>🛠️ Provisioning Viewer</h3>
 <p>Apre un file di config telefono (Cisco/Yealink/Grandstream/Polycom: xml/cfg/json) ed evidenzia i <strong>parametri VoIP rilevanti</strong> (SIP server, utente, codec, NTP, VLAN…), con le <strong>password mascherate</strong>.</p>
 
@@ -224,7 +230,8 @@
 <p>Testa una connessione <strong>ws/wss</strong> a un SIP server WebSocket (subprotocollo <code>sip</code>, RFC 7118) e invia un OPTIONS — utile per WebRTC / softphone browser.</p>
 
 <h3>📄 Export report</h3>
-<p>Dal SIP Health Check puoi <strong>💾 salvare il report</strong> (.txt o .html) da allegare ai ticket.</p>
+<p>Dal SIP Health Check puoi <strong>💾 salvare il report</strong> (.txt o .html). Dall'analisi PCAP, il pulsante <strong>💾 Report</strong> (nella barra del Ladder) genera un <strong>report HTML brandizzato</strong> con diagnosi chiamate (scorecard qualità voce + conformità RFC 3261), diagramma ladder e findings.</p>
+<p>Quasi <strong>ogni strumento del menu VoIP</strong> ha il suo pulsante <strong>💾 Report</strong> (Health Check, DNS, STUN/NAT, SRTP, Network Path, Provisioning, Firewall, Raw SIP, OPTIONS Monitor, Teams DR). E con <strong>🧰 VoIP → 📄 Report VoIP completo</strong> generi un <strong>unico report</strong> che include i risultati di tutti gli strumenti eseguiti nella sessione — ideale da allegare ai ticket.</p>
 
 <div class="warn-box"><em>Cattura LIVE</em>, <em>RTP Player</em> e <em>Percorso di rete</em> (LLDP/CDP) richiedono <strong>Wireshark/Npcap</strong>. Il <em>Generatore traffico</em> e gli strumenti che inviano SIP vanno usati <strong>solo su reti/sistemi di cui hai autorizzazione</strong>.</div>
 </section>
@@ -331,7 +338,7 @@
   <li>Green <strong>RTP arrows</strong> show the media streams (codec, packets) interleaved with SIP.</li>
 </ul>
 <h3>Auto-diagnosis</h3>
-<p>When you select a call, the right panel shows an <strong>automatic diagnosis</strong>: outcome (200/BYE or failure with code and <em>what to check</em>), <strong>local ringback (180) vs early media (183)</strong>, repeated auth challenges, timeout/no answer.</p>
+<p>When you select a call, the right panel shows an <strong>automatic diagnosis</strong>: outcome (200/BYE or failure with code and <em>what to check</em>), <strong>local ringback (180) vs early media (183)</strong>, repeated auth challenges, timeout/no answer. For calls with RTP it also shows a <strong>0-100 voice-quality scorecard</strong> (MOS/loss/jitter) and a <strong>one-line root cause</strong> (e.g. one-way audio, degraded audio).</p>
 <p>Each message is also run through an <strong>RFC 3261 conformance check</strong>: presence of the mandatory fields (Via, From, To, Call-ID, CSeq, Max-Forwards), <code>z9hG4bK</code> branch, From/To tags, CSeq↔method consistency, Max-Forwards, Content-Length and Contact in INVITE/2xx — with a ✅ compliant / ⚠️ warnings / ⛔ malformed verdict and the list of what's missing. The same check appears on the real response in the <em>SIP Builder</em>.</p>
 </section>
 
@@ -361,7 +368,7 @@
 <section>
 <h2>📖 Doc &amp; 🖱️ Drag &amp; Drop</h2>
 <p><strong>📖 Doc</strong>: an editable, categorized link collection (CUCM SRND, AudioCodes, etc.) — double-click opens in the browser.</p>
-<p><strong>Drag &amp; Drop</strong>: drop a file on the window and choose what to do — PCAP → analyze in the Ladder; SDL trace → TranslatorX; syslog/log → Syslog viewer.</p>
+<p><strong>Drag &amp; Drop</strong>: drop a file <strong>anywhere on the window</strong> — a <strong>PCAP opens directly</strong> in the Ladder (with a loading bar), while for text logs you can choose SDL trace → TranslatorX or syslog/log → Syslog viewer.</p>
 </section>
 
 <section>
@@ -371,6 +378,9 @@
 <h3>🩺 SIP Health Check (1-click)</h3>
 <p>Enter a domain (or <code>sip:user@domain</code>) and one click runs <strong>DNS NAPTR → SRV → A/AAAA → TLS+certificate → SIP OPTIONS</strong> in sequence, returning a colored report with a <strong>0-100 score</strong> and the list of issues. The fastest way to find out "why the trunk is down".</p>
 
+<h3>🧪 Environment Check (per vendor)</h3>
+<p>A <strong>guided readiness wizard</strong>: pick the <strong>vendor</strong> (Teams Direct Routing, AudioCodes, Ribbon, Cisco CUBE/CUCM, Asterisk/FreePBX, FreeSWITCH, Alcatel OXE/OXO, Yeastar, 3CX, generic) and LosaTerm runs the <strong>automated checks</strong> it can do without credentials (DNS-A, TLS 5061 handshake, SIP OPTIONS to the target — for Teams the 3 Microsoft PSTN hubs) and shows the <strong>vendor-specific checklist</strong> + the <strong>debug/trace command cheat-sheet</strong> for the tenant/config state (Tier-B). The idea: automate the network part, guide the platform side — without becoming a credentialed auditor.</p>
+
 <h3>🔴 Live Capture → pcap</h3>
 <p>Pick the interface (it also shows the IP), set a BPF filter (<strong>VoIP</strong> preset: 5060/5061/3478/5349 + RTP) and capture live with <code>dumpcap</code>. <strong>🪜 Open in Ladder</strong> analyzes the capture in the SIP diagram right away. Requires Wireshark + Npcap.</p>
 
@@ -378,7 +388,7 @@
 <p>From a PCAP it lists RTP streams and <strong>plays the audio</strong> (G.711 µ-law/A-law → WAV): hear one-way audio, gaps, noise immediately. Also extracts <strong>DTMF digits</strong> (RFC 2833) and saves the WAV.</p>
 
 <h3>📡 SIP OPTIONS Monitor</h3>
-<p>Continuous watchdog of one or more trunks: sends OPTIONS at an interval and shows <strong>status, RTT, uptime %, last OK/error</strong> (green/red) in a live table.</p>
+<p>Continuous watchdog of one or more trunks: sends OPTIONS at an interval and shows <strong>status, RTT, uptime %, last OK/error</strong> (green/red) in a live table. Configured trunks are <strong>saved</strong> (%APPDATA%\LosaTermVoip): on restart you find them already listed, with the monitor <strong>stopped</strong>, ready to start.</p>
 
 <h3>🔑 SIP Registration Live</h3>
 <p>Registers a SIP account with <strong>Digest MD5 authentication</strong> (handles the 401/407 challenge: realm/nonce/qop) and shows the granted Expires. With "Keep registered" it <strong>auto-refreshes</strong>; a button de-registers (Expires 0).</p>
@@ -406,6 +416,9 @@
 <h3>🔐 SRTP / DTLS Analyzer</h3>
 <p>Paste an SDP → analyze media security: <strong>SDES</strong> (a=crypto: suite, key), <strong>DTLS-SRTP</strong> (a=fingerprint, a=setup), with warnings (SHA1_32, NULL cipher, cleartext RTP).</p>
 
+<h3>🟦 Teams Direct Routing — readiness</h3>
+<p>One-click check of <strong>Microsoft PSTN hub</strong> reachability (<code>sip/sip2/sip3.pstnhub.microsoft.com</code>): <strong>DNS A</strong> resolution (Teams doesn't use SRV) and a <strong>TLS handshake on 5061</strong> reading the Microsoft certificate, plus the <strong>DR requirements checklist</strong> (SBC certificate, media ports UDP 49152–53247, Microsoft IP ranges, SBC pairing, user enablement).</p>
+
 <h3>🛠️ Provisioning Viewer</h3>
 <p>Opens a phone config file (Cisco/Yealink/Grandstream/Polycom: xml/cfg/json) and highlights the <strong>relevant VoIP parameters</strong> (SIP server, user, codecs, NTP, VLAN…), with <strong>passwords masked</strong>.</p>
 
@@ -413,7 +426,8 @@
 <p>Tests a <strong>ws/wss</strong> connection to a WebSocket SIP server (<code>sip</code> subprotocol, RFC 7118) and sends an OPTIONS — handy for WebRTC / browser softphones.</p>
 
 <h3>📄 Export report</h3>
-<p>From the SIP Health Check you can <strong>💾 save the report</strong> (.txt or .html) to attach to tickets.</p>
+<p>From the SIP Health Check you can <strong>💾 save the report</strong> (.txt or .html). From PCAP analysis, the <strong>💾 Report</strong> button (in the Ladder bar) generates a <strong>branded HTML report</strong> with call diagnosis (voice-quality scorecard + RFC 3261 conformance), ladder diagram and findings.</p>
+<p>Almost <strong>every VoIP-menu tool</strong> has its own <strong>💾 Report</strong> button (Health Check, DNS, STUN/NAT, SRTP, Network Path, Provisioning, Firewall, Raw SIP, OPTIONS Monitor, Teams DR). And with <strong>🧰 VoIP → 📄 Full VoIP report</strong> you generate a <strong>single report</strong> that includes the results of every tool run in the session — ideal to attach to tickets.</p>
 
 <div class="warn-box"><em>Live Capture</em>, <em>RTP Player</em> and <em>Network Path</em> (LLDP/CDP) require <strong>Wireshark/Npcap</strong>. The <em>traffic generator</em> and the SIP-sending tools must be used <strong>only on networks/systems you are authorized to test</strong>.</div>
 </section>
