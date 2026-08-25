@@ -1192,6 +1192,7 @@ namespace LosaTermVoip
 
         // Layout persistente
         SplitContainer mainSplit;
+        ToolStripButton tsbConn;
         LayoutData layout;
 
         public MainForm()
@@ -1314,6 +1315,7 @@ namespace LosaTermVoip
             var mVoip = new ToolStripMenuItem("🧰 VoIP");
             mVoip.DropDownItems.Add("🩺 SIP Health Check (1-click)", null, (s, e) => OpenHealthCheck());
             mVoip.DropDownItems.Add(L.B("🧪 Environment Check (per vendor)","🧪 Environment Check (per vendor)"), null, (s, e) => OpenEnvCheck());
+            mVoip.DropDownItems.Add(L.B("🏷️ Template vendor (profili)","🏷️ Vendor templates (profiles)"), null, (s, e) => OpenVendorTemplates());
             mVoip.DropDownItems.Add(new ToolStripSeparator());
             mVoip.DropDownItems.Add(L.B("🗺️ Percorso di rete (LLDP/CDP)","🗺️ Network Path (LLDP/CDP)"), null, (s, e) => OpenNetPath());
             mVoip.DropDownItems.Add(L.B("🔴 Cattura LIVE → pcap","🔴 Live Capture → pcap"),  null, (s, e) => OpenLiveCapture());
@@ -1333,6 +1335,7 @@ namespace LosaTermVoip
             mVoip.DropDownItems.Add(new ToolStripSeparator());
             mVoip.DropDownItems.Add(L.B("🧾 Network Readiness Report","🧾 Network Readiness Report"), null, (s, e) => OpenReadiness());
             mVoip.DropDownItems.Add(L.B("📄 Report VoIP completo","📄 Full VoIP report"), null, (s, e) => ReportHelper.ExportCombined(this));
+            mVoip.DropDownItems.Add(L.B("📜 Cronologia test","📜 Test history"), null, (s, e) => OpenHistory());
 
             var mInfo = new ToolStripMenuItem("ℹ️ Info");
             mInfo.Click += (s, e) => ShowNetInfo();
@@ -1358,6 +1361,14 @@ namespace LosaTermVoip
                 ToolTipText  = L.B("Analizza un file PCAP/PCAPNG con tshark (Wireshark)","Analyze a PCAP/PCAPNG file with tshark (Wireshark)")
             };
             btnPcap.Click += (s, e) => OpenPcapTab();
+
+            tsbConn = new ToolStripButton(L.B("🗂 Connessioni","🗂 Connections")) {
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                ForeColor    = Color.White,
+                ToolTipText  = L.B("Mostra/nascondi la lista connessioni (si nasconde da sola sui PCAP)","Show/hide the connection list (auto-hides on PCAP tabs)"),
+                CheckOnClick = false
+            };
+            tsbConn.Click += (s, e) => { if (mainSplit != null) { mainSplit.Panel1Collapsed = !mainSplit.Panel1Collapsed; UpdateConnToggle(); } };
 
             var btnServer = new ToolStripButton(L.T("btn.server")) {
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
@@ -1416,6 +1427,7 @@ namespace LosaTermVoip
             btnSerial.Click += (s, e) => OpenSerial();
 
             // ── Toolbar raggruppata per categoria ──
+            tb.Items.Add(tsbConn); tb.Items.Add(new ToolStripSeparator());
             tb.Items.Add(btnPcap); tb.Items.Add(btnSbc); tb.Items.Add(btnHomer); tb.Items.Add(btnNet); tb.Items.Add(btnSerial);
             tb.Items.Add(new ToolStripSeparator());
             tb.Items.Add(btnServer);
@@ -1561,7 +1573,7 @@ namespace LosaTermVoip
 
             // ── Area destra: solo tabMain (i pulsanti SSH sono nel ToolStrip sopra) ──
             tabMain = new TabControl { Dock = DockStyle.Fill };
-            tabMain.SelectedIndexChanged += (s, e) => SyncSshBar();
+            tabMain.SelectedIndexChanged += (s, e) => { SyncSshBar(); AdjustSplitForTab(); };
             // Chiusura tab: tasto centrale = chiudi al volo; tasto destro = menu "Chiudi"
             tabMain.MouseUp += (s, e) => {
                 if (e.Button != MouseButtons.Middle && e.Button != MouseButtons.Right) return;
@@ -1632,6 +1644,8 @@ namespace LosaTermVoip
         }
 
         Connection Sel() { if(lvConn.SelectedItems.Count==0){MessageBox.Show(L.B("Seleziona una connessione.","Select a connection."),L.B("Attenzione","Warning"),MessageBoxButtons.OK,MessageBoxIcon.Information);return null;} return (Connection)lvConn.SelectedItems[0].Tag; }
+        // Aggiunge un profilo pre-compilato da un template vendor e rinfresca la lista
+        public void AddConnectionTemplate(Connection c) { connections.Add(c); ConnectionStore.Save(connections); RefreshList(); Log(L.B("Template aggiunto: ","Template added: ")+c.Name); }
         void AddConn()  { using(var f=new EditConnectionForm()) if(f.ShowDialog()==DialogResult.OK){connections.Add(f.Result);ConnectionStore.Save(connections);RefreshList();Log("Aggiunta: "+f.Result.Name);} }
         void EditConn() { var c=Sel();if(c==null)return; using(var f=new EditConnectionForm(c)) if(f.ShowDialog()==DialogResult.OK){connections[connections.IndexOf(c)]=f.Result;ConnectionStore.Save(connections);RefreshList();Log("Modificata: "+f.Result.Name);} }
         void DelConn()  { var c=Sel();if(c==null)return; if(MessageBox.Show("Eliminare \""+c.Name+"\"?","Conferma",MessageBoxButtons.YesNo,MessageBoxIcon.Question)==DialogResult.Yes){connections.Remove(c);ConnectionStore.Save(connections);RefreshList();Log("Eliminata: "+c.Name);} }
@@ -1750,6 +1764,8 @@ namespace LosaTermVoip
         TeamsDrPanel       teamsDrForm;
         EnvCheckPanel      envCheckForm;
         ReadinessReportPanel readinessForm;
+        HistoryPanel         historyForm;
+        VendorTemplatesPanel vendorTplForm;
         ProvisioningPanel  provForm;
         RawSipPanel        rawSipForm;
         WebRtcPanel        webRtcForm;
@@ -1888,6 +1904,18 @@ namespace LosaTermVoip
                   try { readinessForm.Icon = AppIcon.Shared; } catch { } readinessForm.Show(this); readinessForm.BringToFront(); }
             catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Network Readiness:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
+        void OpenHistory()
+        {
+            try { if (historyForm == null || historyForm.IsDisposed) historyForm = new HistoryPanel();
+                  try { historyForm.Icon = AppIcon.Shared; } catch { } historyForm.Show(this); historyForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "History:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenVendorTemplates()
+        {
+            try { if (vendorTplForm == null || vendorTplForm.IsDisposed) vendorTplForm = new VendorTemplatesPanel(this);
+                  try { vendorTplForm.Icon = AppIcon.Shared; } catch { } vendorTplForm.Show(this); vendorTplForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Vendor templates:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
         void OpenProvisioning()
         {
             try { if (provForm == null || provForm.IsDisposed) provForm = new ProvisioningPanel();
@@ -2015,9 +2043,9 @@ namespace LosaTermVoip
             string shortName = Path.GetFileName(pcapFile);
             string tabTitle = "  📦 " + (shortName.Length > 18 ? shortName.Substring(0, 16) + "…" : shortName) + "  ";
 
-            var tabPage = new TabPage(tabTitle) { ToolTipText = pcapFile };
+            var tabPage = new TabPage(tabTitle) { ToolTipText = pcapFile, Tag = "pcap" };
             tabMain.TabPages.Add(tabPage);
-            tabMain.SelectedTab = tabPage;
+            tabMain.SelectedTab = tabPage;   // → SelectedIndexChanged collassa la lista connessioni (AdjustSplitForTab)
 
             string tempLog = Path.Combine(Path.GetTempPath(), "netterm_pcap_" + pcapTabCounter + ".log");
             File.WriteAllText(tempLog, "");
@@ -2025,9 +2053,6 @@ namespace LosaTermVoip
             var analyzer = new LogAnalyzerPanel(tempLog) { Dock = DockStyle.Fill };
             tabPage.Controls.Add(analyzer);
             analyzer.AnalyzePcap(tshark, pcapFile);
-
-            // Restringi la lista connessioni per dare spazio all'analisi (il tasto Report resta raggiungibile)
-            try { if (mainSplit != null && mainSplit.SplitterDistance > 260) mainSplit.SplitterDistance = 260; } catch { }
 
             tabPage.HandleDestroyed += (s, e) => { try { File.Delete(tempLog); } catch { } };
         }
@@ -2194,6 +2219,29 @@ namespace LosaTermVoip
         {
             if (tsbSessions == null || tabMain == null) return;
             tsbSessions.Text = L.B("🗂 Sessioni (","🗂 Sessions (") + tabMain.TabPages.Count + ")";
+        }
+
+        // Adatta il layout alla scheda attiva: le schede PCAP collassano la lista
+        // connessioni per dare tutto lo spazio all'analisi; le altre la ripristinano.
+        void AdjustSplitForTab()
+        {
+            try
+            {
+                if (mainSplit == null || mainSplit.IsDisposed || tabMain == null) return;
+                var tab = tabMain.SelectedTab;
+                bool isPcap = tab != null && (tab.Tag as string) == "pcap";
+                if (mainSplit.Panel1Collapsed != isPcap) mainSplit.Panel1Collapsed = isPcap;
+                UpdateConnToggle();
+            }
+            catch { }
+        }
+
+        void UpdateConnToggle()
+        {
+            if (tsbConn == null || mainSplit == null) return;
+            bool visible = !mainSplit.Panel1Collapsed;
+            tsbConn.Checked = visible;
+            tsbConn.Text = (visible ? "🗂 " : "🗂▸ ") + L.B("Connessioni", "Connections");
         }
 
         void SyncSshBar()

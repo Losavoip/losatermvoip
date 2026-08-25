@@ -103,6 +103,47 @@ namespace LosaTermVoip
     }
 
     // ════════════════════════════════════════════════════════════════════════
+    //  Persistenza splitter dei pannelli interni (Analyzer + Ladder).
+    //  File separato da layout.json per non entrare in conflitto col salvataggio
+    //  della main form: una volta regolati, valgono per tutte le sessioni.
+    // ════════════════════════════════════════════════════════════════════════
+    [DataContract]
+    public class PaneLayoutData
+    {
+        [DataMember] public int Analyzer = 300;   // findings | tab (Dettaglio/CallFlow/Ladder)
+        [DataMember] public int Ladder   = 640;   // diagramma ladder | dettaglio messaggio
+    }
+
+    public static class PaneLayout
+    {
+        static readonly string FilePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "LosaTermVoip", "panes.json");
+
+        public static PaneLayoutData Load()
+        {
+            try
+            {
+                if (!File.Exists(FilePath)) return new PaneLayoutData();
+                var ser = new DataContractJsonSerializer(typeof(PaneLayoutData));
+                using (var fs = File.OpenRead(FilePath)) return (PaneLayoutData)ser.ReadObject(fs);
+            }
+            catch { return new PaneLayoutData(); }
+        }
+
+        public static void Save(PaneLayoutData d)
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
+                var ser = new DataContractJsonSerializer(typeof(PaneLayoutData));
+                using (var fs = File.Create(FilePath)) ser.WriteObject(fs, d);
+            }
+            catch { }
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
     //  Tab "Doc." — raccolta link documentazione editabile a mano
     //  (sostituisce il vecchio Cisco Docs)
     // ════════════════════════════════════════════════════════════════════════

@@ -47,6 +47,14 @@ namespace LosaTermVoip
             Build();
         }
 
+        // Apertura con vendor preselezionato (dai template vendor)
+        public EnvCheckPanel(string presetVendor) : this()
+        {
+            if (!string.IsNullOrEmpty(presetVendor))
+                for (int i = 0; i < cmbVendor.Items.Count; i++)
+                    if (string.Equals(cmbVendor.Items[i].ToString(), presetVendor, StringComparison.OrdinalIgnoreCase)) { cmbVendor.SelectedIndex = i; break; }
+        }
+
         void Build()
         {
             var top = new Panel { Dock = DockStyle.Top, Height = 82, BackColor = Color.FromArgb(28, 35, 55), Padding = new Padding(12) };
@@ -148,7 +156,7 @@ namespace LosaTermVoip
                         "💡 Tier-B (tenant/config state): run the commands above and paste the output into the dedicated tools for diagnosis.\r\n"), Color.DimGray);
             }
             catch (Exception ex) { Log("[ERR] " + ex.Message + "\r\n", Color.OrangeRed); }
-            finally { if (btnGo.IsHandleCreated) btnGo.BeginInvoke((MethodInvoker)delegate { btnGo.Enabled = true; }); }
+            finally { if (btnGo.IsHandleCreated) btnGo.BeginInvoke((MethodInvoker)delegate { btnGo.Enabled = true; ReportHelper.SaveHistoryText("Environment Check — " + vendor, host, rtb.Text); }); }
         }
 
         // ── Teams Direct Routing (PSTN hub Microsoft) ──

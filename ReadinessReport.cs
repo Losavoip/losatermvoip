@@ -60,6 +60,15 @@ namespace LosaTermVoip
             Build();
         }
 
+        // Apertura con vendor + target preimpostati (dai template vendor)
+        public ReadinessReportPanel(string presetVendor, string presetTarget) : this()
+        {
+            if (!string.IsNullOrEmpty(presetVendor))
+                for (int i = 0; i < cmbVendor.Items.Count; i++)
+                    if (string.Equals(cmbVendor.Items[i].ToString(), presetVendor, StringComparison.OrdinalIgnoreCase)) { cmbVendor.SelectedIndex = i; break; }
+            if (!string.IsNullOrEmpty(presetTarget)) txtTarget.Text = presetTarget;
+        }
+
         void Build()
         {
             // ── Barra superiore: target + vendor + azioni ──
@@ -206,6 +215,7 @@ namespace LosaTermVoip
                 report.Append(body.ToString());
                 lastReport = report.ToString();
                 ReportHelper.Set("Network Readiness", lastReport);
+                ReportHelper.SaveHistoryText("Network Readiness", effTarget, lastReport);   // cronologia automatica
             }
             catch (Exception ex) { Log("[ERR] " + ex.Message + "\r\n", Color.OrangeRed); }
             finally

@@ -19,7 +19,7 @@ echo [1/3] Compilazione...
   /r:System.Net.dll ^
   /r:System.Security.dll ^
   /r:System.Core.dll ^
-  NetTerm.cs Analyzer.cs FtpSftpServer.cs Localization.cs AdvancedFeatures.cs Enhancements.cs SbcHealth.cs VoipCodes.cs NetTools.cs TftpServer.cs DhcpServer.cs SerialConsole.cs VoipCalc.cs StunTester.cs OptionsMonitor.cs RtpPlayer.cs DnsVoip.cs DnsQuery.cs HealthCheck.cs FirewallCheck.cs LiveCapture.cs SipRegister.cs TrafficGen.cs NetPath.cs Srtp.cs Provisioning.cs RawSip.cs WebRtc.cs SipValidator.cs TeamsDR.cs ReportHelper.cs EnvCheck.cs ReadinessReport.cs
+  NetTerm.cs Analyzer.cs FtpSftpServer.cs Localization.cs AdvancedFeatures.cs Enhancements.cs SbcHealth.cs VoipCodes.cs NetTools.cs TftpServer.cs DhcpServer.cs SerialConsole.cs VoipCalc.cs StunTester.cs OptionsMonitor.cs RtpPlayer.cs DnsVoip.cs DnsQuery.cs HealthCheck.cs FirewallCheck.cs LiveCapture.cs SipRegister.cs TrafficGen.cs NetPath.cs Srtp.cs Provisioning.cs RawSip.cs WebRtc.cs SipValidator.cs TeamsDR.cs ReportHelper.cs EnvCheck.cs ReadinessReport.cs VendorTemplates.cs
 
 if errorlevel 1 (
   echo.

@@ -245,6 +245,7 @@ namespace LosaTermVoip
         Label    lblStats;
         ProgressBar pbLoad;
         System.Windows.Forms.Timer pollTimer;
+        string currentPcapPath;   // ultimo PCAP analizzato — per "Apri in Wireshark"
 
         int cntErr = 0, cntWarn = 0, cntInfo = 0;
 
@@ -306,7 +307,22 @@ namespace LosaTermVoip
 
             // ── Split: findings | dettaglio ───────────────────────────────────
             var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical };
-            split.SplitterDistance = 420;
+            bool splitInit = false;
+            split.Layout += (s, e) => {
+                if (splitInit) return;
+                if (split.Width < 140 + 340 + split.SplitterWidth) return;   // troppo piccolo: aspetta il layout reale
+                try { split.Panel1MinSize = 140; split.Panel2MinSize = 340; } catch { }
+                int want = PaneLayout.Load().Analyzer;
+                int max = split.Width - split.Panel2MinSize - split.SplitterWidth;
+                if (want < split.Panel1MinSize) want = split.Panel1MinSize;
+                if (want > max) want = max;
+                try { split.SplitterDistance = want; } catch { }
+                splitInit = true;
+            };
+            split.SplitterMoved += (s, e) => {
+                if (!splitInit) return;
+                try { var d = PaneLayout.Load(); d.Analyzer = split.SplitterDistance; PaneLayout.Save(d); } catch { }
+            };
 
             // Findings list
             lvFindings = new ListView { Dock = DockStyle.Fill, View = View.Details, FullRowSelect = true, OwnerDraw = false };
@@ -330,6 +346,7 @@ namespace LosaTermVoip
             var tabLadder = new TabPage("📊 Ladder");
             ladderPanel = new SipLadderPanel { Dock = DockStyle.Fill };
             ladderPanel.ExportRequested += (s, e) => SaveReport();   // 💾 Report dalla barra ladder
+            ladderPanel.WiresharkRequested += (s, e) => OpenInWireshark();   // 🦈 Apri in Wireshark
             tabLadder.Controls.Add(ladderPanel);
 
             rightTabs = rightPanel;
@@ -656,6 +673,8 @@ namespace LosaTermVoip
         // Chiamato dall'esterno (OpenPcapTab in MainForm) per analizzare direttamente un file
         public void AnalyzePcap(string tshark, string pcapFile)
         {
+            currentPcapPath = pcapFile;
+            try { if (rightTabs != null && rightTabs.TabPages.Count >= 3) rightTabs.SelectedIndex = 2; } catch { }   // parti dal Ladder
             ClearFindings();
             lblStats.Text = L.B("⏳ Analisi PCAP: ","⏳ Analyzing PCAP: ") + Path.GetFileName(pcapFile) + " ...";
             pbLoad.Visible = true;   // rotella di caricamento
@@ -768,6 +787,23 @@ namespace LosaTermVoip
             }));
         }
 
+        void OpenInWireshark()
+        {
+            if (string.IsNullOrEmpty(currentPcapPath) || !File.Exists(currentPcapPath))
+            { MessageBox.Show(this, L.B("Analizza prima un file PCAP.","Analyze a PCAP file first."), "LosaTermVoip"); return; }
+            string ws = PcapAnalyzer.FindWireshark();
+            if (string.IsNullOrEmpty(ws))
+            {
+                MessageBox.Show(this,
+                    L.B("Wireshark.exe non trovato.\nInstalla Wireshark: https://www.wireshark.org/download.html",
+                        "Wireshark.exe not found.\nInstall Wireshark: https://www.wireshark.org/download.html"),
+                    "LosaTermVoip", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            try { Process.Start(ws, "\"" + currentPcapPath + "\""); }
+            catch (Exception ex) { MessageBox.Show(this, ex.Message, "LosaTermVoip"); }
+        }
+
         void OpenPcap()
         {
             using (var dlg = new OpenFileDialog {
@@ -790,6 +826,7 @@ namespace LosaTermVoip
                 ClearFindings();
                 lblStats.Text = L.B("⏳ Analisi PCAP in corso...","⏳ Analyzing PCAP...");
                 string pcapFile = dlg.FileName;
+                currentPcapPath = pcapFile;
                 ThreadPool.QueueUserWorkItem(_ => {
                     // ── Passata 1: call flow strutturato con timestamp reali ──────
                     var pcapEntries = PcapAnalyzer.ExtractCallFlow(tshark, pcapFile);
@@ -936,6 +973,7 @@ namespace LosaTermVoip
         Label                  lblCallSel;
         string                 lastVoip, lastSip;
         public event EventHandler ExportRequested;   // richiesto l'export report dalla barra ladder
+        public event EventHandler WiresharkRequested; // richiesto "apri in Wireshark" dalla barra ladder
 
         const int ROW_H   = 28;
         const int HDR_H   = 65;
@@ -947,7 +985,22 @@ namespace LosaTermVoip
         void BuildUI()
         {
             var outer = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical };
-            outer.SplitterDistance = 620;
+            bool outerInit = false;
+            outer.Layout += (s, e) => {
+                if (outerInit) return;
+                if (outer.Width < 240 + 200 + outer.SplitterWidth) return;   // troppo piccolo: aspetta il layout reale
+                try { outer.Panel1MinSize = 240; outer.Panel2MinSize = 200; } catch { }
+                int want = PaneLayout.Load().Ladder;
+                int max = outer.Width - outer.Panel2MinSize - outer.SplitterWidth;
+                if (want < outer.Panel1MinSize) want = outer.Panel1MinSize;
+                if (want > max) want = max;
+                try { outer.SplitterDistance = want; } catch { }
+                outerInit = true;
+            };
+            outer.SplitterMoved += (s, e) => {
+                if (!outerInit) return;
+                try { var d = PaneLayout.Load(); d.Ladder = outer.SplitterDistance; PaneLayout.Save(d); } catch { }
+            };
 
             // ── Sinistra: filtri + stats + ladder ─────────────────────────────
             var leftStack = new Panel { Dock = DockStyle.Fill };
@@ -1034,8 +1087,21 @@ namespace LosaTermVoip
             new ToolTip().SetToolTip(btnExport, L.B("Esporta il report HTML dell'analisi (diagnosi + ladder + findings)","Export the HTML analysis report (diagnosis + ladder + findings)"));
             btnExport.Click += (s, e) => { if (ExportRequested != null) ExportRequested(this, EventArgs.Empty); };
             filterBar.Controls.Add(btnExport);
-            // Tieni SEMPRE il pulsante Report al bordo destro della barra (così è sempre raggiungibile)
-            filterBar.Resize += (s, e) => { int x = filterBar.Width - btnExport.Width - 8; btnExport.Left = x < 200 ? 200 : x; };
+
+            // 🦈 Apri in Wireshark — accanto al Report, sempre visibile a destra
+            var btnWs = new Button { Text = L.B("🦈 Wireshark","🦈 Wireshark"), Location = new Point(838, 2),
+                Width = 104, Height = 24, FlatStyle = FlatStyle.Flat,
+                ForeColor = Color.White, BackColor = Color.FromArgb(40, 80, 120), Font = new Font("Segoe UI", 9, FontStyle.Bold) };
+            btnWs.FlatAppearance.BorderSize = 0;
+            new ToolTip().SetToolTip(btnWs, L.B("Apri questo PCAP in Wireshark (se installato)","Open this PCAP in Wireshark (if installed)"));
+            btnWs.Click += (s, e) => { if (WiresharkRequested != null) WiresharkRequested(this, EventArgs.Empty); };
+            filterBar.Controls.Add(btnWs);
+
+            // Tieni SEMPRE Report + Wireshark al bordo destro della barra (così sono sempre raggiungibili)
+            filterBar.Resize += (s, e) => {
+                int xr = filterBar.Width - btnExport.Width - 8; btnExport.Left = xr < 200 ? 200 : xr;
+                int xw = btnExport.Left - btnWs.Width - 6;      btnWs.Left     = xw < 96  ? 96  : xw;
+            };
 
             // Stats bar
             lblVoip = new Label {
@@ -1928,6 +1994,21 @@ namespace LosaTermVoip
                 if (!string.IsNullOrEmpty(found) && File.Exists(found.Trim())) return found.Trim();
             } catch { }
 
+            return null;
+        }
+
+        // Wireshark.exe (GUI) nella stessa cartella di tshark — per "Apri in Wireshark"
+        public static string FindWireshark()
+        {
+            string ts = FindTshark();
+            if (string.IsNullOrEmpty(ts)) return null;
+            try
+            {
+                string dir = Path.GetDirectoryName(ts);
+                string w = Path.Combine(dir, "Wireshark.exe");
+                if (File.Exists(w)) return w;
+            }
+            catch { }
             return null;
         }
 

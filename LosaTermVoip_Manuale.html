@@ -230,7 +230,19 @@
 <p>Testa una connessione <strong>ws/wss</strong> a un SIP server WebSocket (subprotocollo <code>sip</code>, RFC 7118) e invia un OPTIONS — utile per WebRTC / softphone browser.</p>
 
 <h3>📄 Export report</h3>
-<p>Dal SIP Health Check puoi <strong>💾 salvare il report</strong> (.txt o .html). Dall'analisi PCAP, il pulsante <strong>💾 Report</strong> (nella barra del Ladder) genera un <strong>report HTML brandizzato</strong> con diagnosi chiamate (scorecard qualità voce + conformità RFC 3261), diagramma ladder e findings.</p>
+<p>Dal SIP Health Check puoi <strong>💾 salvare il report</strong> (.txt, .html o <strong>.pdf</strong>). Dall'analisi PCAP, il pulsante <strong>💾 Report</strong> (nella barra del Ladder) genera un <strong>report brandizzato</strong> con diagnosi chiamate (scorecard qualità voce + conformità RFC 3261), diagramma ladder e findings. L'<strong>export PDF</strong> usa Microsoft Edge in modalità headless (preinstallato su Windows 10/11); se non è disponibile, salva in HTML e usa "Stampa → Salva come PDF" dal browser.</p>
+
+<h3>🦈 Apri in Wireshark</h3>
+<p>Nella barra del <strong>SIP Ladder</strong>, accanto al Report, il pulsante <strong>🦈 Wireshark</strong> apre il PCAP che stai analizzando direttamente in Wireshark (se installato) — comodo per l'analisi di dettaglio a livello pacchetto dopo il triage in LosaTerm.</p>
+
+<h3>📜 Cronologia test</h3>
+<p><strong>🧰 VoIP → 📜 Cronologia test</strong> elenca gli <strong>snapshot HTML</strong> dei test eseguiti (Network Readiness ed Environment Check si salvano da soli; gli altri strumenti al momento dell'export), con data/ora, strumento e target. Puoi riaprirli, eliminarli o aprire la cartella. Gli snapshot sono in <code>%APPDATA%\LosaTermVoip\history\</code>.</p>
+
+<h3>🏷️ Template vendor</h3>
+<p><strong>🧰 VoIP → 🏷️ Template vendor</strong> offre una libreria di profili pronti (Cisco CUBE/CUCM, AudioCodes, Ribbon, Asterisk, FreeSWITCH, Kamailio, Teams DR, Yeastar, 3CX, Alcatel) con protocollo/porta admin, porte SIP, range media e note. Da qui puoi <strong>creare un profilo di connessione SSH pre-compilato</strong> (poi completi host e credenziali) e aprire <strong>Environment Check</strong> o <strong>Network Readiness</strong> con quel vendor già selezionato.</p>
+
+<h3>🪟 Layout salvato</h3>
+<p>Le proporzioni dei pannelli dell'Analyzer (lista findings ↔ ladder, e diagramma ↔ dettaglio) sono <strong>regolabili trascinando gli splitter</strong> e vengono <strong>salvate automaticamente</strong> per tutte le sessioni successive. Aprendo un PCAP la lista connessioni si riduce da sola per dare spazio all'analisi; il pulsante <strong>🗂 Connessioni</strong> in alto la mostra/nasconde a piacere.</p>
 <p>Quasi <strong>ogni strumento del menu VoIP</strong> ha il suo pulsante <strong>💾 Report</strong> (Health Check, DNS, STUN/NAT, SRTP, Network Path, Provisioning, Firewall, Raw SIP, OPTIONS Monitor, Teams DR). E con <strong>🧰 VoIP → 📄 Report VoIP completo</strong> generi un <strong>unico report</strong> che include i risultati di tutti gli strumenti eseguiti nella sessione — ideale da allegare ai ticket.</p>
 
 <h3>🧾 Network Readiness Report</h3>
@@ -429,7 +441,19 @@
 <p>Tests a <strong>ws/wss</strong> connection to a WebSocket SIP server (<code>sip</code> subprotocol, RFC 7118) and sends an OPTIONS — handy for WebRTC / browser softphones.</p>
 
 <h3>📄 Export report</h3>
-<p>From the SIP Health Check you can <strong>💾 save the report</strong> (.txt or .html). From PCAP analysis, the <strong>💾 Report</strong> button (in the Ladder bar) generates a <strong>branded HTML report</strong> with call diagnosis (voice-quality scorecard + RFC 3261 conformance), ladder diagram and findings.</p>
+<p>From the SIP Health Check you can <strong>💾 save the report</strong> (.txt, .html or <strong>.pdf</strong>). From PCAP analysis, the <strong>💾 Report</strong> button (in the Ladder bar) generates a <strong>branded report</strong> with call diagnosis (voice-quality scorecard + RFC 3261 conformance), ladder diagram and findings. <strong>PDF export</strong> uses headless Microsoft Edge (pre-installed on Windows 10/11); if unavailable, save as HTML and use "Print → Save as PDF" from the browser.</p>
+
+<h3>🦈 Open in Wireshark</h3>
+<p>In the <strong>SIP Ladder</strong> bar, next to Report, the <strong>🦈 Wireshark</strong> button opens the PCAP you are analyzing directly in Wireshark (if installed) — handy for packet-level deep dives after triaging in LosaTerm.</p>
+
+<h3>📜 Test history</h3>
+<p><strong>🧰 VoIP → 📜 Test history</strong> lists <strong>HTML snapshots</strong> of the tests you ran (Network Readiness and Environment Check save themselves; other tools on export), with date/time, tool and target. You can reopen, delete, or open the folder. Snapshots live in <code>%APPDATA%\LosaTermVoip\history\</code>.</p>
+
+<h3>🏷️ Vendor templates</h3>
+<p><strong>🧰 VoIP → 🏷️ Vendor templates</strong> offers a library of ready profiles (Cisco CUBE/CUCM, AudioCodes, Ribbon, Asterisk, FreeSWITCH, Kamailio, Teams DR, Yeastar, 3CX, Alcatel) with admin protocol/port, SIP ports, media range and notes. From here you can <strong>create a pre-filled SSH connection profile</strong> (then fill in host and credentials) and open <strong>Environment Check</strong> or <strong>Network Readiness</strong> with that vendor preselected.</p>
+
+<h3>🪟 Saved layout</h3>
+<p>The Analyzer pane proportions (findings list ↔ ladder, and diagram ↔ detail) are <strong>adjustable by dragging the splitters</strong> and are <strong>saved automatically</strong> for all subsequent sessions. Opening a PCAP auto-shrinks the connection list to give the analysis room; the <strong>🗂 Connections</strong> button at the top shows/hides it at will.</p>
 <p>Almost <strong>every VoIP-menu tool</strong> has its own <strong>💾 Report</strong> button (Health Check, DNS, STUN/NAT, SRTP, Network Path, Provisioning, Firewall, Raw SIP, OPTIONS Monitor, Teams DR). And with <strong>🧰 VoIP → 📄 Full VoIP report</strong> you generate a <strong>single report</strong> that includes the results of every tool run in the session — ideal to attach to tickets.</p>
 
 <h3>🧾 Network Readiness Report</h3>
