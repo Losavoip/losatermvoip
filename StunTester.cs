@@ -118,7 +118,7 @@ namespace LosaTermVoip
             });
         }
 
-        static IPEndPoint GetMapped(string server, out string localPrimary, out string err)
+        internal static IPEndPoint GetMapped(string server, out string localPrimary, out string err)
         {
             localPrimary = "?"; err = null;
             string host; int port = 3478;

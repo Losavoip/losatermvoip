@@ -1331,6 +1331,7 @@ namespace LosaTermVoip
             mVoip.DropDownItems.Add("🔥 Firewall port-check",  null, (s, e) => OpenFirewallCheck());
             mVoip.DropDownItems.Add(L.B("🧮 Calcolatori VoIP","🧮 VoIP Calculators"),    null, (s, e) => OpenVoipCalc());
             mVoip.DropDownItems.Add(new ToolStripSeparator());
+            mVoip.DropDownItems.Add(L.B("🧾 Network Readiness Report","🧾 Network Readiness Report"), null, (s, e) => OpenReadiness());
             mVoip.DropDownItems.Add(L.B("📄 Report VoIP completo","📄 Full VoIP report"), null, (s, e) => ReportHelper.ExportCombined(this));
 
             var mInfo = new ToolStripMenuItem("ℹ️ Info");
@@ -1748,6 +1749,7 @@ namespace LosaTermVoip
         SrtpAnalyzerPanel  srtpForm;
         TeamsDrPanel       teamsDrForm;
         EnvCheckPanel      envCheckForm;
+        ReadinessReportPanel readinessForm;
         ProvisioningPanel  provForm;
         RawSipPanel        rawSipForm;
         WebRtcPanel        webRtcForm;
@@ -1879,6 +1881,12 @@ namespace LosaTermVoip
             try { if (teamsDrForm == null || teamsDrForm.IsDisposed) teamsDrForm = new TeamsDrPanel();
                   try { teamsDrForm.Icon = AppIcon.Shared; } catch { } teamsDrForm.Show(this); teamsDrForm.BringToFront(); }
             catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Teams DR:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        void OpenReadiness()
+        {
+            try { if (readinessForm == null || readinessForm.IsDisposed) readinessForm = new ReadinessReportPanel();
+                  try { readinessForm.Icon = AppIcon.Shared; } catch { } readinessForm.Show(this); readinessForm.BringToFront(); }
+            catch (Exception ex) { MessageBox.Show(L.B("Errore ","Error ") + "Network Readiness:\n" + ex.Message, "Debug", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         void OpenProvisioning()
         {

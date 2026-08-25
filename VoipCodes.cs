@@ -269,6 +269,18 @@ namespace LosaTermVoip
                 "--- Zoom Phone / RingCentral / 8x8 ---\r\n" +
                 "Admin portal > Call logs / Quality of Service.\r\n" +
                 "For the SIP trunk/SBC use the SBC Health tab (OPTIONS/TLS/DNS)." },
+
+            new[] { "Yeastar",
+                "--- Web GUI (P-Series / S-Series) ---\r\n" +
+                "Maintenance > Troubleshooting > Ethernet Capture:\r\n" +
+                "  capture a pcap (then analyze it here in the Ladder)\r\n" +
+                "Maintenance > Troubleshooting > SIP/IAX Capture: SIP trace\r\n" +
+                "Maintenance > System Log: set level to Debug, download logs\r\n\r\n" +
+                "--- Trunk / status ---\r\n" +
+                "PBX Monitor / Trunk status: Registered / Reachable (OPTIONS)\r\n" +
+                "CDR and Recordings > Call Logs: call detail records\r\n\r\n" +
+                "Note: enable TCP in global SIP settings requires a PBX REBOOT;\r\n" +
+                "disable SIP ALG on the router; handle NAT for remote extensions." },
         };
     }
 }

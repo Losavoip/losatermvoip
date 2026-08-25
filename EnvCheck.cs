@@ -17,7 +17,7 @@ namespace LosaTermVoip
     public class EnvCheckPanel : Form
     {
         // Vendor supportati (chiave = keyword per trovare la cheat-sheet in VoipCodes.DebugCmds)
-        static readonly string[] Vendors = {
+        internal static readonly string[] Vendors = {
             "Microsoft Teams (Direct Routing)",
             "AudioCodes (Mediant SBC)",
             "Ribbon (SBC Edge / SWe Lite)",
@@ -245,18 +245,27 @@ namespace LosaTermVoip
         }
 
         // Cheat-sheet Debug Cmds del vendor (da VoipCodes.DebugCmds, match per keyword)
-        static string FindCheatSheet(string vendor)
+        internal static string FindCheatSheet(string vendor)
         {
-            string key = vendor.Split(' ')[0].ToLowerInvariant();   // "audiocodes", "ribbon", "cisco", "asterisk", …
+            if (string.IsNullOrEmpty(vendor)) return null;
+            // 1) match ESATTO sul nome completo — evita di confondere "Cisco CUBE" con "Cisco CUCM"
             foreach (var row in VoipCodes.DebugCmds)
-                if (row.Length >= 2 && row[0].ToLowerInvariant().Contains(key)) return row[1];
-            // fallback per Teams/Alcatel/3CX/FreeSWITCH ecc.
+                if (row.Length >= 2 && string.Equals(row[0], vendor, StringComparison.OrdinalIgnoreCase))
+                    return row[1];
+            // 2) fallback prudente: un token distintivo (>=5 caratteri) del nome vendor presente nella riga
+            //    (i token corti come "sbc"/"pbx"/"ios" sono ambigui e vengono ignorati)
+            string[] toks = vendor.ToLowerInvariant().Split(new char[] { ' ', '/', '(', ')', '-', ',' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var row in VoipCodes.DebugCmds)
-                if (row.Length >= 2 && vendor.ToLowerInvariant().Contains(row[0].Split(' ')[0].ToLowerInvariant())) return row[1];
+            {
+                if (row.Length < 2) continue;
+                string r = row[0].ToLowerInvariant();
+                foreach (var tok in toks)
+                    if (tok.Length >= 5 && r.Contains(tok)) return row[1];
+            }
             return null;
         }
 
-        static string Checklist(string vendor)
+        internal static string Checklist(string vendor)
         {
             if (vendor.StartsWith("Microsoft Teams"))
                 return L.B(
