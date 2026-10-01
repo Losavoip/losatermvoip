@@ -25,19 +25,24 @@ Sangoma/Asterisk**.
 - **🩺 SBC Health** *(flagship)* — vendor-neutral trunk diagnostics, all native, no dependencies:
   - **SIP OPTIONS** test (UDP / TCP / TLS) — *"is the trunk up?"*
   - **TLS certificate** check — CN/SAN, **expiry**, TLS version, cipher (the #1 cause of Teams Direct Routing outages)
-  - **DNS SRV / A** lookup — `_sip._tcp`, `_sips._tls`, …
-- **🪜 SIP Ladder** — turn PCAPs and Cisco SDL/SDI traces into clean SIP ladder diagrams (grouped per Call-ID, like Wireshark VoIP Calls)
-- **📡 Syslog server** — built-in UDP collector with live SIP filtering (AudioCodes / Cisco)
-- **🔀 SIP Simulator** — craft and send SIP messages; cause-code translator; SDP/codec analyzer
-- **🖥️ Terminal** — tabbed SSH / Telnet, plus SFTP / SCP / FTP and a built-in FTP/SFTP server
-- **🌍 Multilingual UI** — Italian / English / French / German / Spanish (auto-detected)
+  - **DNS NAPTR / SRV / A** lookup — `_sip._tcp`, `_sips._tls`, …
+- **🪜 SIP Ladder** — turn **PCAPs** and **Cisco SDL/SDI traces** into clean SIP ladder diagrams (grouped per Call-ID, like Wireshark VoIP Calls), with call scorecard, RFC 3261 checks and branded HTML/PDF report
+- **🔴 Live SIP ladder from SSH** — run `debug ccsip messages` on a Cisco router/CUBE and watch the ladder diagram build itself in real time
+- **🔢 DTMF detection** — detects the negotiated method (**RFC 2833/4733**, **SIP INFO**, **KPML**, NOTIFY) and the out-of-band digits pressed — spot the classic "IVR ignores my key presses" mismatch
+- **📡 Syslog server** — built-in UDP collector with live SIP/call filtering (AudioCodes / Cisco)
+- **🔀 SIP Simulator** — craft and send SIP messages, SIP REGISTER tester, cause-code translator, SDP/codec analyzer
+- **🧾 Network Readiness & Environment Check** — one-click checklist (DNS, NAT/STUN, proxy, ports, TLS, traceroute) with a single HTML report
+- **🖥️ Terminal** — tabbed SSH / Telnet and **serial console** (PuTTY bundled), plus SFTP / SCP / FTP
+- **🗄️ Built-in servers** — FTP / SFTP / **TFTP** / **DHCP** for phone provisioning and firmware upgrades
+- **🧰 VoIP toolbox** — bandwidth calculator, STUN/NAT tester, OPTIONS monitor, RTP player, SRTP, WebRTC, Teams DR checks, vendor templates (Cisco CUBE/CUCM, AudioCodes, Ribbon, Asterisk, FreeSWITCH, Kamailio, 3CX, Yeastar, Alcatel)
+- **🌍 Bilingual UI** — English / Italian
 
 ## 📥 Download
 
 Grab the latest portable build from the [**Releases**](../../releases) page, or
 from the website: **https://losavoip.github.io**
 
-It's portable: unzip and run `LosaTermVoip.exe`. No installer.
+It's portable: unzip and run `LosaTermVoip.exe`. No installer, PuTTY already included.
 
 > The executable is not code-signed, so Windows SmartScreen may warn
 > *"unknown app"* — that's normal for an independent project. Prefer to be sure?
@@ -47,7 +52,7 @@ It's portable: unzip and run `LosaTermVoip.exe`. No installer.
 
 - Windows 10 / 11 (64-bit)
 - .NET Framework 4.8 (already present on up-to-date Windows)
-- *Optional:* **PuTTY** (for SSH/Telnet sessions), **Wireshark/tshark** (for PCAP analysis)
+- *Optional:* **Wireshark/tshark** (for RTP/audio extraction and "Open in Wireshark") — PuTTY is bundled in the zip
 
 ## 🔨 Build from source
 
@@ -63,7 +68,8 @@ build.bat
 C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /target:winexe /win32icon:app.ico /out:LosaTermVoip.exe ^
   /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Runtime.Serialization.dll ^
   /r:System.Net.dll /r:System.Security.dll /r:System.Core.dll ^
-  NetTerm.cs Analyzer.cs FtpSftpServer.cs Localization.cs AdvancedFeatures.cs Enhancements.cs SbcHealth.cs VoipCodes.cs NetTools.cs TftpServer.cs DhcpServer.cs SerialConsole.cs VoipCalc.cs StunTester.cs OptionsMonitor.cs RtpPlayer.cs DnsVoip.cs DnsQuery.cs HealthCheck.cs FirewallCheck.cs LiveCapture.cs SipRegister.cs TrafficGen.cs NetPath.cs Srtp.cs Provisioning.cs RawSip.cs WebRtc.cs
+  NetTerm.cs Analyzer.cs FtpSftpServer.cs Localization.cs AdvancedFeatures.cs Enhancements.cs SbcHealth.cs VoipCodes.cs NetTools.cs TftpServer.cs DhcpServer.cs SerialConsole.cs VoipCalc.cs StunTester.cs OptionsMonitor.cs RtpPlayer.cs DnsVoip.cs DnsQuery.cs HealthCheck.cs FirewallCheck.cs LiveCapture.cs SipRegister.cs TrafficGen.cs NetPath.cs Srtp.cs Provisioning.cs RawSip.cs WebRtc.cs ^
+  SipValidator.cs TeamsDR.cs ReportHelper.cs EnvCheck.cs ReadinessReport.cs VendorTemplates.cs
 ```
 
 ## 🙋 About this project (full transparency)
