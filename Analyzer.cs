@@ -254,6 +254,15 @@ namespace LosaTermVoip
         string cfCallId    = "?";   // ultimo Call-ID visto
         string cfFrom      = "";
         string cfTo        = "";
+        string cfPeerIp    = "";    // IP del peer (da request-URI / "from/to x")
+        string cfLocalIp   = "";    // IP locale del router (dal Via)
+        readonly List<SipLadderMessage> liveLadderMsgs = new List<SipLadderMessage>();  // ladder da sessione SSH live
+        bool ladderDirty = false;   // c'è un nuovo messaggio da riversare nel ladder grafico
+        // Stato DTMF (per-sessione): metodo negoziato + ultimo digit
+        string dtmfMethod = null;   // "RFC 2833/4733" | "SIP INFO" | "KPML" | "SIP NOTIFY"
+        bool   sdpDtmfReported = false;  // negoziazione telephone-event già segnalata
+        string   lastDtmfDigit = null;   // dedup begin/end della stessa pressione
+        DateTime lastDtmfTime  = DateTime.MinValue;
 
         static readonly Color ColError    = Color.FromArgb(255, 210, 210);
         static readonly Color ColWarning  = Color.FromArgb(255, 250, 200);
@@ -405,6 +414,9 @@ namespace LosaTermVoip
                     // Call flow extraction
                     ExtractCallFlow(line);
 
+                    // DTMF: rileva metodo (RFC2833/INFO/KPML) e tasti premuti
+                    DetectDtmf(line, newFindings);
+
                     foreach (var rule in rules)
                     {
                         try
@@ -436,8 +448,107 @@ namespace LosaTermVoip
 
                 if (newFindings.Count > 0)
                     BeginInvoke((Action)(() => AddFindings(newFindings)));
+
+                // Riversa i messaggi SIP live nel ladder grafico (una volta per batch)
+                if (ladderDirty)
+                {
+                    ladderDirty = false;
+                    // Normalizza i placeholder ora che gli IP reali sono noti (il Via del 1º
+                    // INVITE arriva dopo la riga del metodo → il 1º msg nasce con "local").
+                    if (!string.IsNullOrEmpty(cfLocalIp))
+                        foreach (var m in liveLadderMsgs) {
+                            if (m.SrcIp == "local") m.SrcIp = cfLocalIp;
+                            if (m.DstIp == "local") m.DstIp = cfLocalIp;
+                        }
+                    if (!string.IsNullOrEmpty(cfPeerIp))
+                        foreach (var m in liveLadderMsgs) {
+                            if (m.SrcIp == "peer") m.SrcIp = cfPeerIp;
+                            if (m.DstIp == "peer") m.DstIp = cfPeerIp;
+                        }
+                    var snapshot = new List<SipLadderMessage>(liveLadderMsgs);
+                    BeginInvoke((Action)(() => FeedLiveLadder(snapshot)));
+                }
             }
             catch { }
+        }
+
+        // Riversa i messaggi SIP raccolti dalla sessione live nel ladder grafico.
+        void FeedLiveLadder(List<SipLadderMessage> msgs)
+        {
+            try { if (ladderPanel != null && msgs != null && msgs.Count > 0) ladderPanel.LoadMessages(msgs, "", ""); }
+            catch { }
+        }
+
+        // Rilevamento DTMF dalla sessione live: metodo (in-band RFC2833 vs out-of-band) + tasto.
+        void DetectDtmf(string line, List<Finding> sink)
+        {
+            // 1. Negoziazione RFC 2833/4733 nell'SDP — SOLO su 'a=rtpmap:NN telephone-event'
+            //    (NON su Call-Info/Allow-Events che citano 'telephone-event' senza negoziare il media)
+            var mSdpTe = Regex.Match(line, @"rtpmap:(\d+)\s+telephone-event", RegexOptions.IgnoreCase);
+            if (!sdpDtmfReported && mSdpTe.Success)
+            {
+                sdpDtmfReported = true;
+                dtmfMethod = "RFC 2833/4733";
+                string pt = " PT=" + mSdpTe.Groups[1].Value;
+                sink.Add(Dtmf(L.B("DTMF: RFC 2833/4733 (telephone-event" + pt + ", in-band nell'RTP) negoziato — la cifra viaggia nell'RTP, non nel 'debug ccsip'. Per vederla: 'debug voip rtp session named-event' o 'debug voip dsp'.",
+                                  "DTMF: RFC 2833/4733 (telephone-event" + pt + ", in-band in RTP) negotiated — the digit travels in RTP, not in 'debug ccsip'. To see it: 'debug voip rtp session named-event' or 'debug voip dsp'.")));
+            }
+            // RFC 2833 / NTE — cifra effettiva dai debug 'voip rtp session named-event' o 'voip dsp'
+            var mNamed = Regex.Match(line, @"named[_\- ]?event[^0-9A-Da-d#\*]{0,20}([0-9A-Da-d#\*])\b", RegexOptions.IgnoreCase);
+            if (mNamed.Success)
+                sink.Add(Dtmf(L.B("Tasto DTMF '", "DTMF key '") + mNamed.Groups[1].Value + L.B("' via RFC 2833/4733 (named-event nell'RTP)", "' via RFC 2833/4733 (named-event in RTP)")));
+
+            // ISR4000/IOS-XE — il DSP notifica la cifra via HPI: "Digit=3(3)" ('debug voip hpi notification/all')
+            var mHpi = Regex.Match(line, @"Digit\s*=\s*([0-9A-Da-d#\*])\s*\(", RegexOptions.IgnoreCase);
+            if (mHpi.Success)
+            {
+                string dg = mHpi.Groups[1].Value;
+                // dedup: la stessa pressione genera 'digit notification' + 'digit end notification'
+                if (!(dg == lastDtmfDigit && (DateTime.Now - lastDtmfTime).TotalMilliseconds < 1500))
+                {
+                    lastDtmfDigit = dg; lastDtmfTime = DateTime.Now;
+                    var mDur = Regex.Match(line, @"Duration\s*=\s*(\d+)", RegexOptions.IgnoreCase);
+                    string dur = mDur.Success ? " (" + mDur.Groups[1].Value + "ms)" : "";
+                    sink.Add(Dtmf(L.B("Tasto DTMF premuto: '", "DTMF key pressed: '") + dg + "'" + dur + L.B(" — RFC 2833, rilevato dal DSP (HPI)", " — RFC 2833, detected by the DSP (HPI)")));
+                }
+            }
+            // 2. SIP INFO out-of-band — tasto esplicito (Cisco dtmf-relay: 'Signal=5')
+            var mSig = Regex.Match(line, @"Signal\s*=\s*([0-9A-Da-d#\*])", RegexOptions.IgnoreCase);
+            if (mSig.Success)
+            {
+                dtmfMethod = "SIP INFO";
+                sink.Add(Dtmf(L.B("Tasto DTMF '", "DTMF key '") + mSig.Groups[1].Value + L.B("' via SIP INFO (out-of-band)", "' via SIP INFO (out-of-band)")));
+            }
+            else if (Regex.IsMatch(line, @"application/dtmf(-relay)?", RegexOptions.IgnoreCase))
+            {
+                dtmfMethod = "SIP INFO";
+                sink.Add(Dtmf(L.B("DTMF out-of-band: SIP INFO (application/dtmf-relay)", "DTMF out-of-band: SIP INFO (application/dtmf-relay)")));
+            }
+            // 3. KPML (NOTIFY application/kpml) — tasto in <DTMF digit="5"/>
+            var mK = Regex.Match(line, @"digits?\s*=\s*[""']?([0-9A-Da-d#\*])", RegexOptions.IgnoreCase);
+            if (mK.Success && Regex.IsMatch(line, @"(kpml|DTMF)", RegexOptions.IgnoreCase))
+            {
+                dtmfMethod = "KPML";
+                sink.Add(Dtmf(L.B("Tasto DTMF '", "DTMF key '") + mK.Groups[1].Value + L.B("' via KPML (out-of-band NOTIFY)", "' via KPML (out-of-band NOTIFY)")));
+            }
+            else if (Regex.IsMatch(line, @"application/kpml", RegexOptions.IgnoreCase))
+            {
+                dtmfMethod = "KPML";
+                sink.Add(Dtmf(L.B("DTMF out-of-band: KPML (NOTIFY)", "DTMF out-of-band: KPML (NOTIFY)")));
+            }
+        }
+
+        Finding Dtmf(string msg)
+        {
+            return new Finding {
+                Timestamp   = DateTime.Now,
+                Severity    = Severity.Info,
+                RuleName    = "DTMF",
+                LineSnippet = "🔢 " + msg,
+                Explanation = L.B(
+                    "Rilevamento DTMF dalla sessione. RFC 2833/4733 = toni IN-BAND nell'RTP (negoziati con 'telephone-event' nell'SDP). SIP INFO / KPML = OUT-OF-BAND nella segnalazione. Un MISMATCH di metodo tra i due leg è la causa tipica di 'i toni DTMF non passano' (IVR che non risponde ai tasti).",
+                    "DTMF detection from the session. RFC 2833/4733 = IN-BAND tones in RTP (negotiated with 'telephone-event' in SDP). SIP INFO / KPML = OUT-OF-BAND in signaling. A method MISMATCH between the two legs is the classic cause of 'DTMF tones don't pass' (IVR not responding to key presses).")
+            };
         }
 
         // Cerca gli header From:/To: nelle righe successive al messaggio SIP e
@@ -471,10 +582,18 @@ namespace LosaTermVoip
             // IOS/CUBE debug ccsip messages mostra:
             //   "Received SIP message from x.x.x.x:"  → IN
             //   "Sending SIP message to x.x.x.x:"     → OUT
-            if (Regex.IsMatch(line, @"\b(Received|Recv)\b", RegexOptions.IgnoreCase))
+            // Direzione: IOS mostra "Received:" (IN) e "Sent:" (OUT). Include anche Sending/Recv.
+            if (Regex.IsMatch(line, @"\b(Received|Recv|Recd)\b", RegexOptions.IgnoreCase))
                 cfDirection = "IN";
-            else if (Regex.IsMatch(line, @"\b(Sending|Send)\b", RegexOptions.IgnoreCase))
+            else if (Regex.IsMatch(line, @"\b(Sending|Sent|Send)\b", RegexOptions.IgnoreCase))
                 cfDirection = "OUT";
+
+            // IP locale = IP del router nel Via (uguale su Sent e Received della stessa transazione)
+            var mVia = Regex.Match(line, @"Via:\s*SIP/2\.0/\w+\s+(\d{1,3}(?:\.\d{1,3}){3})", RegexOptions.IgnoreCase);
+            if (mVia.Success) cfLocalIp = mVia.Groups[1].Value;
+            // IP del peer: da "message from/to x.x.x.x" (se presente nel formato del debug)
+            var mPeer = Regex.Match(line, @"\bmessage\s+(?:from|to)\s+(\d{1,3}(?:\.\d{1,3}){3})", RegexOptions.IgnoreCase);
+            if (mPeer.Success && mPeer.Groups[1].Value != cfLocalIp) cfPeerIp = mPeer.Groups[1].Value;
 
             // ── 2. Accumula header SIP (sono su righe separate dal metodo) ──
             var mCallId = Regex.Match(line, @"[Cc]all-[Ii][Dd]\s*:\s*(\S+)");
@@ -504,6 +623,13 @@ namespace LosaTermVoip
                 // Tronca response description a 30 char
                 if (method.Length > 30) method = method.Substring(0, 30) + "…";
 
+                // Peer IP dalla request-URI di una richiesta (es. "INVITE sip:...@10.4.4.200:5060")
+                if (mMethod.Success)
+                {
+                    var mUri = Regex.Match(line, @"sips?:[^\s>]*?@?(\d{1,3}(?:\.\d{1,3}){3})", RegexOptions.IgnoreCase);
+                    if (mUri.Success && mUri.Groups[1].Value != cfLocalIp) cfPeerIp = mUri.Groups[1].Value;
+                }
+
                 var entry = new CallFlowEntry
                 {
                     Time      = DateTime.Now.ToString("HH:mm:ss.fff"),
@@ -514,6 +640,24 @@ namespace LosaTermVoip
                     Direction = dir
                 };
                 callFlow.Add(entry);
+
+                // Costruisci anche il messaggio per il LADDER GRAFICO (sessione SSH live)
+                string peer  = string.IsNullOrEmpty(cfPeerIp)  ? "peer"  : cfPeerIp;
+                string local = string.IsNullOrEmpty(cfLocalIp) ? "local" : cfLocalIp;
+                var lm = new SipLadderMessage {
+                    Time     = entry.Time,
+                    Method   = method,
+                    CallId   = (cfCallId != null && cfCallId != "?") ? cfCallId : "live",
+                    FromUser = entry.From,
+                    ToUser   = entry.To,
+                    SrcPort  = "", DstPort = "",
+                    IsRtp    = false
+                };
+                if (dir == "OUT") { lm.SrcIp = local; lm.DstIp = peer; }
+                else              { lm.SrcIp = peer;  lm.DstIp = local; }
+                liveLadderMsgs.Add(lm);
+                ladderDirty = true;
+
                 // Reset From/To dopo aver catturato il messaggio (sono per-messaggio)
                 cfFrom = ""; cfTo = "";
                 BeginInvoke((Action)(() => RefreshCallFlow()));
