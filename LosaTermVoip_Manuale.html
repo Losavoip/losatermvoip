@@ -216,6 +216,7 @@
 
 <h3>🧬 SIP Builder / Header tester</h3>
 <p>Form per costruire un messaggio SIP (metodo, From/To/Contact, <strong>header extra</strong> per la manipolazione, body/SDP) e inviarlo <strong>UDP/TCP/TLS</strong>; Via/Call-ID/branch automatici. Gestisce l'<strong>autenticazione Digest</strong> sui 401/407 (anche per l'INVITE) e mostra messaggio inviato + risposta.</p>
+<p><strong>Tutti gli header sono modificabili</strong>: Request-URI, <strong>Via</strong>, Call-ID, Max-Forwards, User-Agent, oltre a From/To/Contact. Il campo <strong>NAT IP</strong> (IP oppure IP:porta) sostituisce l'IP locale in tutti i segnaposto <code>$LOCALIP$</code>/<code>$LOCAL$</code>, quindi in Via, Contact, From e SDP, per simulare un client dietro NAT o con IP pubblico diverso (l'IP sorgente reale del pacchetto non cambia). Segnaposto disponibili: <code>$TARGET$ $LOCALIP$ $LOCAL$ $REALIP$ $LPORT$ $TR$ $BRANCH$ $CALLID$ $TAG$</code>, validi anche in Extra e nel body. Un campo vuoto omette l'header; un header in Extra con lo stesso nome (anche in forma compatta, es. <code>v:</code>) sostituisce quello automatico.</p>
 
 <h3>🔐 SRTP / DTLS Analyzer</h3>
 <p>Incolla un SDP → analizza la sicurezza del media: <strong>SDES</strong> (a=crypto: suite, chiave), <strong>DTLS-SRTP</strong> (a=fingerprint, a=setup), con warning (SHA1_32, NULL cipher, RTP in chiaro).</p>
@@ -427,6 +428,7 @@
 
 <h3>🧬 SIP Builder / Header tester</h3>
 <p>A form to build a SIP message (method, From/To/Contact, <strong>extra headers</strong> for manipulation, body/SDP) and send it <strong>UDP/TCP/TLS</strong>; Via/Call-ID/branch automatic. Handles <strong>Digest authentication</strong> on 401/407 (including for INVITE) and shows the sent message + response.</p>
+<p><strong>Every header is editable</strong>: Request-URI, <strong>Via</strong>, Call-ID, Max-Forwards, User-Agent, plus From/To/Contact. The <strong>NAT IP</strong> field (IP or IP:port) replaces the local IP in every <code>$LOCALIP$</code>/<code>$LOCAL$</code> placeholder, i.e. in Via, Contact, From and SDP, to simulate a client behind NAT or with a different public IP (the real source IP of the packet is unchanged). Placeholders: <code>$TARGET$ $LOCALIP$ $LOCAL$ $REALIP$ $LPORT$ $TR$ $BRANCH$ $CALLID$ $TAG$</code>, also valid in Extra and in the body. An empty field omits the header; an Extra header with the same name (compact form too, e.g. <code>v:</code>) replaces the automatic one.</p>
 
 <h3>🔐 SRTP / DTLS Analyzer</h3>
 <p>Paste an SDP → analyze media security: <strong>SDES</strong> (a=crypto: suite, key), <strong>DTLS-SRTP</strong> (a=fingerprint, a=setup), with warnings (SHA1_32, NULL cipher, cleartext RTP).</p>
